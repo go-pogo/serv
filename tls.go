@@ -1,5 +1,5 @@
 // Copyright (c) 2022, Roel Schut. All rights reserved.
-// applyOptions of this source code is governed by a BSD-style
+// Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
 package serv
@@ -13,10 +13,24 @@ import (
 type TLSConfig = tls.Config
 
 func DefaultTLSConfig() *TLSConfig {
-	var c tls.Config
-	c.MinVersion = tls.VersionTLS12
-	c.PreferServerCipherSuites = true
-	return &c
+	return &tls.Config{
+		PreferServerCipherSuites: true,
+		MinVersion:               tls.VersionTLS12,
+
+		CurvePreferences: []tls.CurveID{
+			tls.CurveP256,
+			tls.X25519,
+		},
+
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		},
+	}
 }
 
 func WithTLS(tc *TLSConfig, cl ...CertificateLoader) Option {
