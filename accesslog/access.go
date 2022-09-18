@@ -1,8 +1,14 @@
+// Copyright (c) 2022, Roel Schut. All rights reserved.
+// applyOptions of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package accesslog
 
 import (
 	"net/http"
 	"time"
+
+	"github.com/felixge/httpsnoop"
 )
 
 type Level int
@@ -24,10 +30,6 @@ func (l Level) InRange(statusCode int) bool {
 		(l&ResponseStatusServerError != 0 && statusCode >= 500 && statusCode <= 599)
 }
 
-type AccessLogger interface {
-	LogAccess(a Access)
-}
-
 type Access struct {
 	// Request received from the client.
 	Request *http.Request
@@ -38,21 +40,21 @@ type Access struct {
 	// StatusCode which was sent back to the client.
 	StatusCode int
 	// Size of the response body returned to the client.
-	Size int
+	Size int64
 }
 
 const panicNilHandler = "accesslog.Collect: http.Handler must not be nil"
 
-func Collect(log AccessLogger, level Level, h *http.Handler) {
-	if h == nil {
+func Collect(log AccessLogger, level Level, next http.Handler) http.Handler {
+	if next == nil {
 		panic(panicNilHandler)
 	}
 	if log == nil || level == ResponseStatusNone {
-		return
+		return next
 	}
 
-	*h = &collector{
-		next:  *h,
+	return &collector{
+		next:  next,
 		level: level,
 		log:   log,
 	}
@@ -64,45 +66,18 @@ type collector struct {
 	log   AccessLogger
 }
 
-func (c *collector) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
+func (c *collector) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
-	resp := responseWrapper{ResponseWriter: wri}
-	c.next.ServeHTTP(&resp, req)
-
-	sc := resp.StatusCode()
-	if !c.level.InRange(sc) {
+	metrics := httpsnoop.CaptureMetrics(c.next, w, r)
+	if !c.level.InRange(metrics.Code) {
 		return
 	}
 
-	c.log.LogAccess(Access{
-		Request:    req,
+	c.log.LogAccess(&Access{
+		Request:    r,
 		Time:       start,
-		Duration:   time.Since(start),
-		StatusCode: sc,
-		Size:       resp.size,
+		Duration:   metrics.Duration,
+		StatusCode: metrics.Code,
+		Size:       metrics.Written,
 	})
-}
-
-type responseWrapper struct {
-	http.ResponseWriter
-	statusCode int
-	size       int
-}
-
-func (rw *responseWrapper) Write(b []byte) (int, error) {
-	n, err := rw.ResponseWriter.Write(b)
-	rw.size += n
-	return n, err
-}
-
-func (rw *responseWrapper) WriteHeader(statusCode int) {
-	rw.statusCode = statusCode
-	rw.ResponseWriter.WriteHeader(statusCode)
-}
-
-func (rw *responseWrapper) StatusCode() int {
-	if rw.statusCode != 0 {
-		return rw.statusCode
-	}
-	return http.StatusOK
 }

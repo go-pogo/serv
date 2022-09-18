@@ -1,3 +1,7 @@
+// Copyright (c) 2022, Roel Schut. All rights reserved.
+// applyOptions of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package accesslog
 
 import (
@@ -43,9 +47,7 @@ func Username(r *http.Request) string {
 }
 
 // https://httpd.apache.org/docs/current/logs.html#common
-type CLF struct {
-	Access
-}
+type CLF Access
 
 func (clf *CLF) Username() string {
 	if u := Username(clf.Request); u != "" {
@@ -67,7 +69,7 @@ func (clf *CLF) String() string {
 func (clf *CLF) WriteTo(w io.Writer) (n int64, err error) {
 	sw := writing.ToCountingStringWriter(w)
 	clf.writeTo(sw)
-	sw.WriteString("\n")
+	_, _ = sw.WriteString("\n")
 	return int64(sw.Count()), errors.Combine(sw.Errors()...)
 }
 
@@ -86,5 +88,5 @@ func (clf *CLF) writeTo(sw writing.StringWriter) {
 	_, _ = sw.WriteString("\" ")
 	_, _ = sw.WriteString(strconv.Itoa(clf.StatusCode))
 	_, _ = sw.WriteString(" ")
-	_, _ = sw.WriteString(strconv.Itoa(clf.Size))
+	_, _ = sw.WriteString(strconv.FormatInt(clf.Size, 10))
 }
