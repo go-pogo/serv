@@ -1,5 +1,5 @@
 // Copyright (c) 2021, Roel Schut. All rights reserved.
-// applyOptions of this source code is governed by a BSD-style
+// Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
 package serv
@@ -80,12 +80,9 @@ func (cfg *Config) Default() {
 	if cfg.MaxHeaderBytes == 0 {
 		cfg.MaxHeaderBytes = 10240
 	}
-	// if cfg.ShutdownTimeout == 0 {
-	// 	cfg.ShutdownTimeout = 5 * time.Second
-	// }
 }
 
-func (cfg *Config) Apply(s *http.Server) error {
+func (cfg *Config) ApplyTo(s *http.Server) {
 	if cfg.ReadTimeout != 0 {
 		s.ReadTimeout = cfg.ReadTimeout
 	}
@@ -107,9 +104,9 @@ func (cfg *Config) Apply(s *http.Server) error {
 	if cfg.ConnContext != nil {
 		s.ConnContext = cfg.ConnContext
 	}
-	return nil
 }
 
-func (cfg *Config) apply(s *Server) error {
-	return cfg.Apply(&s.server)
+func (cfg *Config) applyTo(s *Server) error {
+	cfg.ApplyTo(&s.server)
+	return nil
 }

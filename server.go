@@ -1,5 +1,5 @@
 // Copyright (c) 2021, Roel Schut. All rights reserved.
-// applyOptions of this source code is governed by a BSD-style
+// Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
 package serv
@@ -19,17 +19,17 @@ const (
 )
 
 type Option interface {
-	apply(s *Server) error
+	applyTo(s *Server) error
 }
 
 type optionFunc func(s *Server) error
 
-func (fn optionFunc) apply(s *Server) error { return fn(s) }
+func (fn optionFunc) applyTo(s *Server) error { return fn(s) }
 
 type server = http.Server
 
 // Server is a wrapper for a standard http.Server.
-// The zero value is safe and ready to use and will apply safe defaults on serving.
+// The zero value is safe and ready to use and will applyTo safe defaults on serving.
 type Server struct {
 	server
 	log     ServerLogger
@@ -40,7 +40,7 @@ func New(mux http.Handler, opts ...Option) (*Server, error) {
 	var srv Server
 	srv.Handler = mux
 
-	if err := srv.applyOptions(opts); err != nil {
+	if err := srv.apply(opts); err != nil {
 		return nil, err
 	}
 	return &srv, nil
@@ -50,18 +50,18 @@ func NewDefault(mux http.Handler, opts ...Option) (*Server, error) {
 	var srv Server
 	srv.Handler = mux
 	// default Config never returns an error
-	_ = DefaultConfig().apply(&srv)
+	_ = DefaultConfig().applyTo(&srv)
 
-	if err := srv.applyOptions(opts); err != nil {
+	if err := srv.apply(opts); err != nil {
 		return nil, err
 	}
 	return &srv, nil
 }
 
-func (srv *Server) applyOptions(opts []Option) error {
+func (srv *Server) apply(opts []Option) error {
 	var err error
 	for _, opt := range opts {
-		errors.Append(&err, opt.apply(srv))
+		errors.Append(&err, opt.applyTo(srv))
 	}
 	return err
 }

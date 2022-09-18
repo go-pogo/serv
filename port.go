@@ -1,5 +1,5 @@
 // Copyright (c) 2021, Roel Schut. All rights reserved.
-// applyOptions of this source code is governed by a BSD-style
+// Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
 package serv
@@ -103,7 +103,7 @@ func (p Port) Addr() string {
 	return string(colon) + strconv.FormatUint(uint64(p), 10)
 }
 
-func (p Port) apply(s *Server) error {
+func (p Port) applyTo(s *Server) error {
 	if s.server.Addr == "" {
 		s.server.Addr = p.Addr()
 		return nil
