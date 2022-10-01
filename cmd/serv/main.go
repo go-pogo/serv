@@ -17,6 +17,7 @@ import (
 	"github.com/go-pogo/errors"
 	"github.com/go-pogo/serv"
 	"github.com/go-pogo/serv/accesslog"
+	"github.com/go-pogo/serv/metrics"
 )
 
 func main() {
@@ -38,10 +39,8 @@ func main() {
 	router.Handle("/", handler)
 
 	server, err := serv.NewDefault(
-		accesslog.Collect(
-			new(accesslog.Logger),
-			accesslog.ResponseStatusAll,
-			router,
+		metrics.Collect(router,
+			accesslog.NewRecorder(new(accesslog.Logger), accesslog.ResponseStatusAll),
 		),
 		port,
 	)
