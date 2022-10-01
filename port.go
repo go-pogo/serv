@@ -5,6 +5,7 @@
 package serv
 
 import (
+	"encoding"
 	"fmt"
 	"net"
 	"strconv"
@@ -33,6 +34,11 @@ func (p *ParseError) Error() string {
 	}
 	return p.Err.Error()
 }
+
+var (
+	_ encoding.TextMarshaler   = new(Port)
+	_ encoding.TextUnmarshaler = new(Port)
+)
 
 type Port uint16
 

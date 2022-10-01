@@ -14,6 +14,8 @@ import (
 	"github.com/go-pogo/serv/httpheader"
 )
 
+var _ serv.HeaderModifier = new(AccessControl)
+
 type AccessControl struct {
 	// AllowCredentials sets the Access-Control-Allow-Credentials response
 	// header which tells browsers whether to expose the response to the
