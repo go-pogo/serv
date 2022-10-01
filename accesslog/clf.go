@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/go-pogo/errors"
+	"github.com/go-pogo/serv/metrics"
 	"github.com/go-pogo/writing"
 )
 
@@ -47,7 +48,10 @@ func Username(r *http.Request) string {
 }
 
 // https://httpd.apache.org/docs/current/logs.html#common
-type CLF Access
+type CLF struct {
+	Request *http.Request
+	Metrics metrics.Metrics
+}
 
 func (clf *CLF) Username() string {
 	if u := Username(clf.Request); u != "" {
@@ -57,7 +61,7 @@ func (clf *CLF) Username() string {
 }
 
 func (clf *CLF) Timestamp() string {
-	return clf.Time.Format("02/Jan/2006:15:04:05 -0700")
+	return clf.Metrics.Time.Format("02/Jan/2006:15:04:05 -0700")
 }
 
 func (clf *CLF) String() string {
@@ -86,7 +90,7 @@ func (clf *CLF) writeTo(sw writing.StringWriter) {
 	_, _ = sw.WriteString(" ")
 	_, _ = sw.WriteString(clf.Request.Proto)
 	_, _ = sw.WriteString("\" ")
-	_, _ = sw.WriteString(strconv.Itoa(clf.StatusCode))
+	_, _ = sw.WriteString(strconv.Itoa(clf.Metrics.Code))
 	_, _ = sw.WriteString(" ")
-	_, _ = sw.WriteString(strconv.FormatInt(clf.Size, 10))
+	_, _ = sw.WriteString(strconv.FormatInt(clf.Metrics.Written, 10))
 }
