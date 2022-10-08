@@ -23,11 +23,15 @@ type Metrics struct {
 	Traffic int64
 }
 
-// Recorder receives the Metrics data decides what to do with it. This can range
-// from logging the data and/or making it available for scraping (prometheus).
+// Recorder receives the Metrics data and decides what to do with it. This may
+// range from simple logging to making it available for scraping (prometheus).
 type Recorder interface {
 	Record(met Metrics, req *http.Request)
 }
+
+type RecorderFunc func(met Metrics, req *http.Request)
+
+func (fn RecorderFunc) Record(met Metrics, req *http.Request) { fn(met, req) }
 
 // Collect metrics from http.Handler h and pass it to a Recorder.
 func Collect(h http.Handler, rec ...Recorder) *Collector {
@@ -41,7 +45,7 @@ func Collect(h http.Handler, rec ...Recorder) *Collector {
 	return col
 }
 
-var _ http.Handler = &Collector{}
+var _ http.Handler = new(Collector)
 
 type Collector struct {
 	next    http.Handler
@@ -65,9 +69,26 @@ func (col *Collector) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 	m.snoop = httpsnoop.CaptureMetrics(col.next, wri, req)
 
 	go func() {
-		r := req.Clone(context.Background())
+		r := req.Clone(&noopCtx{req.Context()})
 		for _, rec := range col.rec {
 			rec.Record(m, r)
 		}
 	}()
 }
+
+var _ context.Context = new(noopCtx)
+
+// An noopCtx is similar to context.Background as it is never canceled and has
+// no deadline. However, it does return values from its parent context, when
+// available.
+type noopCtx struct {
+	parent context.Context
+}
+
+func (*noopCtx) Deadline() (deadline time.Time, ok bool) { return }
+
+func (*noopCtx) Done() <-chan struct{} { return nil }
+
+func (*noopCtx) Err() error { return nil }
+
+func (c *noopCtx) Value(key interface{}) interface{} { return c.parent.Value(key) }
