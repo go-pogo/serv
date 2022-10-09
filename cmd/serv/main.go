@@ -40,7 +40,10 @@ func main() {
 
 	server, err := serv.NewDefault(
 		metrics.Collect(router,
-			accesslog.NewRecorder(new(accesslog.Logger), accesslog.ResponseStatusAll),
+			metrics.LimitCodes(
+				metrics.ResponseStatusErrors,
+				accesslog.NewRecorder(new(accesslog.Logger)),
+			),
 		),
 		port,
 	)
