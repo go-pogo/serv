@@ -50,7 +50,7 @@ var _ http.Handler = new(Collector)
 type Collector struct {
 	next    http.Handler
 	rec     []Recorder
-	traffic atomic.Int64
+	traffic int64
 }
 
 func (col *Collector) WithRecorder(rec Recorder) *Collector {
@@ -63,8 +63,8 @@ func (col *Collector) WithRecorder(rec Recorder) *Collector {
 func (col *Collector) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 	var m Metrics
 	m.Time = time.Now()
-	m.Traffic = col.traffic.Add(1)
-	defer col.traffic.Add(-1)
+	m.Traffic = atomic.AddInt64(&col.traffic, 1)
+	defer atomic.AddInt64(&col.traffic, -1)
 
 	m.snoop = httpsnoop.CaptureMetrics(col.next, wri, req)
 
