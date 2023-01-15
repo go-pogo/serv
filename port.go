@@ -36,6 +36,7 @@ func (p *ParseError) Error() string {
 }
 
 var (
+	_ Option                   = new(Port)
 	_ encoding.TextMarshaler   = new(Port)
 	_ encoding.TextUnmarshaler = new(Port)
 )

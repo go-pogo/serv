@@ -8,6 +8,8 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"sync/atomic"
+	"time"
 
 	"github.com/go-pogo/errors"
 )
@@ -28,12 +30,14 @@ func (fn optionFunc) applyTo(s *Server) error { return fn(s) }
 
 type server = http.Server
 
-// Server is a wrapper for a standard http.Server.
+// Server is a wrapper for a standard http.ServerLogger.
 // The zero value is safe and ready to use and will applyTo safe defaults on serving.
 type Server struct {
 	server
-	log     ServerLogger
-	started bool
+	log     Logger
+	started uint32
+
+	ShutdownTimeout time.Duration
 }
 
 func New(mux http.Handler, opts ...Option) (*Server, error) {
@@ -66,8 +70,12 @@ func (srv *Server) apply(opts []Option) error {
 	return err
 }
 
+func (srv *Server) isStarted() bool {
+	return atomic.LoadUint32(&srv.started) == 1
+}
+
 func (srv *Server) start() error {
-	if srv.started {
+	if srv.isStarted() {
 		return errors.New(ErrServerStarted)
 	}
 
@@ -75,18 +83,9 @@ func (srv *Server) start() error {
 		srv.log = NopLogger()
 	}
 
-	srv.started = true
+	srv.log.ServerStart(srv.Addr)
+	atomic.StoreUint32(&srv.started, 1)
 	return nil
-}
-
-func (srv *Server) listen(defAddr string) (net.Listener, error) {
-	addr := srv.server.Addr
-	if addr == "" {
-		addr = defAddr
-	}
-
-	srv.log.LogServerStart(addr)
-	return net.Listen("tcp", addr)
 }
 
 func (srv *Server) Serve(l net.Listener) error {
@@ -106,73 +105,101 @@ func (srv *Server) ListenAndServe() error {
 		return err
 	}
 
-	ln, err := srv.listen(":http")
-	if err != nil {
-		return errors.WithStack(err)
+	err := srv.server.ListenAndServe()
+	if !errors.Is(err, http.ErrServerClosed) {
+		err = errors.WithStack(err)
+	}
+	return err
+}
+
+func (srv *Server) ServeTLS(l net.Listener, certFile, keyFile string) error {
+	if err := srv.start(); err != nil {
+		return err
 	}
 
-	return srv.server.Serve(ln)
+	err := srv.server.ServeTLS(l, certFile, keyFile)
+	if !errors.Is(err, http.ErrServerClosed) {
+		err = errors.WithStack(err)
+	}
+	return err
 }
 
-func (srv *Server) ServeTLS(l net.Listener, cl CertificateLoader) error {
-	return nil
-	// return s.srv.ServeTLS(l, "", "")
+func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
+	if err := srv.start(); err != nil {
+		return err
+	}
+
+	err := srv.server.ListenAndServeTLS(certFile, keyFile)
+	if !errors.Is(err, http.ErrServerClosed) {
+		err = errors.WithStack(err)
+	}
+	return err
 }
 
-func (srv *Server) ListenAndServeTLS(cl CertificateLoader) error {
-	return nil
-	// ln, err := s.listen(":https")
-	//
-	// defer ln.Close()
-	// s.srv.ListenAndServeTLS()
-	// return s.ServeTLS(ln, cl)
+func (srv *Server) Run(ctx context.Context) error {
+	if srv.isStarted() {
+		return errors.New(ErrServerStarted)
+	}
+	if ctx != nil {
+		srv.BaseContext = BaseContext(ctx)
+	}
+
+	if srv.server.TLSConfig != nil &&
+		(len(srv.server.TLSConfig.Certificates) != 0 ||
+			srv.server.TLSConfig.GetCertificate != nil ||
+			len(srv.server.TLSConfig.NameToCertificate) != 0) {
+		return srv.ListenAndServeTLS("", "")
+	}
+
+	return srv.ListenAndServe()
 }
 
-// func (srv *LogClientStart) Run(ctx context.Context) error {
-// 	if !srv.started && ctx != nil {
-// 		srv.BaseContext = BaseContext(ctx)
-// 	}
-//
-// 	if srv.server.TLSConfig != nil &&
-// 		(len(srv.server.TLSConfig.Certificates) != 0 ||
-// 			srv.server.TLSConfig.GetCertificate != nil ||
-// 			len(srv.server.TLSConfig.NameToCertificate) != 0) {
-// 		return srv.ListenAndServeTLS(nil)
-// 	}
-//
-// 	return srv.ListenAndServe()
-// }
-
-// RegisterOnShutdown registers a function to the underlying http.Server to call
-// on Shutdown.
+// RegisterOnShutdown registers a function to the underlying http.ServerLogger, which
+// is called on Shutdown.
 func (srv *Server) RegisterOnShutdown(fn func()) {
 	srv.server.RegisterOnShutdown(fn)
 }
 
 // Shutdown gracefully shuts down the server without interrupting any active
-// connections.
-// It is a wrapper for http.LogClientStart.Shutdown.
+// connections. Just like the underlying http.ServerLogger, Shutdown works by first
+// closing all open listeners, then closing all idle connections, and then
+// waiting indefinitely for connections to return to idle and then shut down.
+// If ShutdownTimeout is set and/or the provided context expires before the
+// shutdown is complete, Shutdown returns the context's error. Otherwise it
+// returns any error returned from closing the Server's underlying
+// net.Listener(s).
 func (srv *Server) Shutdown(ctx context.Context) error {
-	if !srv.started {
+	if !srv.isStarted() {
 		return errors.New(ErrUnstartedShutdown)
 	}
 
-	// Deadline() (deadline time.Time, ok bool)
-
-	srv.log.LogServerShutdown()
+	srv.log.ServerShutdown()
 	srv.server.SetKeepAlivesEnabled(false)
-	return srv.server.Shutdown(ctx)
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if srv.ShutdownTimeout == 0 {
+		if t, ok := ctx.Deadline(); !ok || srv.ShutdownTimeout < t.Sub(time.Now()) {
+			// shutdown timeout is set to a lower value, update context
+			var cancelFn context.CancelFunc
+			ctx, cancelFn = context.WithTimeout(ctx, srv.ShutdownTimeout)
+			defer cancelFn()
+		}
+	}
+
+	return errors.WithStack(srv.server.Shutdown(ctx))
 }
 
 // Close immediately closes all active net.Listeners and any connections in
 // state http.StateNew, http.StateActive, or http.StateIdle. For a graceful
 // shutdown, use Shutdown.
-// It is a wrapper for http.LogClientStart.Close.
+// It is a wrapper for http.NewClient.Close.
 func (srv *Server) Close() error {
-	if !srv.started {
+	if !srv.isStarted() {
 		return errors.New(ErrUnstartedClose)
 	}
 
-	srv.log.LogServerClose()
+	srv.log.ServerClose()
 	return srv.server.Close()
 }

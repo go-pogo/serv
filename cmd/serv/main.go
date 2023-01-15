@@ -16,8 +16,8 @@ import (
 
 	"github.com/go-pogo/errors"
 	"github.com/go-pogo/serv"
-	"github.com/go-pogo/serv/accesslog"
-	"github.com/go-pogo/serv/metrics"
+	"github.com/go-pogo/serv/collect"
+	"github.com/go-pogo/serv/collect/accesslog"
 )
 
 func main() {
@@ -39,13 +39,14 @@ func main() {
 	router.Handle("/", handler)
 
 	server, err := serv.NewDefault(
-		metrics.Collect(router,
-			metrics.LimitCodes(
-				metrics.ResponseStatusErrors,
-				accesslog.NewRecorder(new(accesslog.Logger)),
+		collect.Wrap(router,
+			collect.LimitCodes(
+				collect.ResponseStatusErrors,
+				accesslog.Collector(),
 			),
 		),
 		port,
+		serv.WithLogger(new(serv.DefaultLogger)),
 	)
 	errors.FatalOnErr(err)
 
@@ -65,18 +66,10 @@ func main() {
 	ctx, closeFn := context.WithTimeout(context.Background(), time.Second*3)
 	defer closeFn()
 
-	done := make(chan error)
-	go func() {
-		done <- server.Shutdown(ctx)
-	}()
-
-	select {
-	case err := <-done:
-		if err != nil {
+	if err = server.Shutdown(nil); err != nil {
+		if !errors.Is(err, context.DeadlineExceeded) {
 			_, _ = fmt.Fprintf(os.Stderr, "\nShutdown error: %+v\n", err)
-		}
-	case <-ctx.Done():
-		if err := server.Close(); err != nil {
+		} else if err = server.Close(); err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "\nClose error: %+v\n", err)
 		}
 	}
