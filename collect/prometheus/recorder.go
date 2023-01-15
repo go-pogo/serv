@@ -5,10 +5,11 @@
 package prometheus
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
-	"github.com/go-pogo/serv/metrics"
+	"github.com/go-pogo/serv/collect"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -57,7 +58,7 @@ func (c *Config) defaults() {
 	}
 }
 
-var _ metrics.Recorder = new(recorder)
+var _ collect.Collector = new(recorder)
 
 type recorder struct {
 	requests *prometheus.GaugeVec
@@ -65,7 +66,7 @@ type recorder struct {
 	size     *prometheus.HistogramVec
 }
 
-func NewRecorder(prom prometheus.Registerer, conf *Config) metrics.Recorder {
+func NewRecorder(prom prometheus.Registerer, conf *Config) collect.Collector {
 	if conf == nil {
 		conf = new(Config)
 	}
@@ -103,8 +104,8 @@ func NewRecorder(prom prometheus.Registerer, conf *Config) metrics.Recorder {
 	return r
 }
 
-func (r *recorder) Record(met metrics.Metrics, req *http.Request) {
-	name, _ := metrics.HandlerName(req.Context())
+func (r *recorder) Collect(ctx context.Context, met collect.Metrics, req *http.Request) {
+	name := collect.HandlerName(ctx)
 	code := strconv.Itoa(met.Code)
 
 	r.requests.WithLabelValues(name, req.URL.Path).Add(float64(met.Traffic))

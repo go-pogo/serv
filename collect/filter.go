@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package metrics
+package collect
 
 import (
+	"context"
 	"net/http"
 )
 
@@ -28,16 +29,20 @@ func (l ResponseStatus) InRange(statusCode int) bool {
 		(l&ResponseStatusServerError != 0 && statusCode >= 500 && statusCode <= 599)
 }
 
-func LimitCodes(stat ResponseStatus, next Recorder) Recorder {
+func LimitCodes(stat ResponseStatus, next Collector) Collector {
+	if next == nil {
+		return nil
+	}
+
 	switch stat {
 	case ResponseStatusNone:
 		return nil
 	case ResponseStatusAll:
 		return next
 	}
-	return RecorderFunc(func(met Metrics, req *http.Request) {
+	return CollectorFunc(func(ctx context.Context, met Metrics, req *http.Request) {
 		if stat.InRange(met.Code) {
-			next.Record(met, req)
+			next.Collect(ctx, met, req)
 		}
 	})
 }
