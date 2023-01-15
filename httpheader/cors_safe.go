@@ -11,4 +11,4 @@ import (
 	"net/http"
 )
 
-func extractOrigin(http.Header) string { return "" }
+func extractOrigin(_ http.Header) string { return "" }
