@@ -6,13 +6,13 @@ package serv
 
 import (
 	"crypto/tls"
+	"os"
 
 	"github.com/go-pogo/errors"
 )
 
-type TLSConfig = tls.Config
-
-func DefaultTLSConfig() *TLSConfig {
+// DefaultTLSConfig returns a modern preconfigured tls.Config.
+func DefaultTLSConfig() *tls.Config {
 	return &tls.Config{
 		PreferServerCipherSuites: true,
 		MinVersion:               tls.VersionTLS12,
@@ -33,47 +33,117 @@ func DefaultTLSConfig() *TLSConfig {
 	}
 }
 
-func WithTLS(tc *TLSConfig, cl ...CertificateLoader) Option {
+type TLSOption interface {
+	Apply(conf *tls.Config) error
+}
+
+func WithTLS(conf *tls.Config, opts ...TLSOption) Option {
 	return optionFunc(func(s *Server) error {
-		if tc == nil {
+		if conf == nil {
 			s.TLSConfig = DefaultTLSConfig()
 		} else {
-			s.TLSConfig = tc
+			s.TLSConfig = conf
 		}
 
 		var err error
-		for _, x := range cl {
-			errors.Append(&err, LoadCertificate(s.TLSConfig, x))
+		for _, opt := range opts {
+			errors.Append(&err, opt.Apply(conf))
 		}
 		return err
 	})
 }
 
-type CertificateLoader interface {
-	LoadCertificate() (tls.Certificate, error)
+var _ TLSOption = &TLSConfig{}
+
+type TLSConfig struct {
+	CaCertFile string `env:"TLS_CA_FILE" flag:"tlscacert"`
+	CertFile   string `env:"TLS_CERT_FILE" flag:"tlscert"`
+	KeyFile    string `env:"TLS_KEY_FILE" flag:"tlskey"`
+
+	// InsecureSkipVerify should be used only for testing
+	InsecureSkipVerify bool `env:"INSECURE_SKIP_VERIFY"`
 }
 
-func LoadCertificate(tc *tls.Config, l CertificateLoader) error {
-	cert, err := l.LoadCertificate()
-	if err != nil {
-		return err
+func (tc TLSConfig) IsZero() bool {
+	return tc.CertFile != "" && tc.KeyFile != ""
+}
+
+func (tc TLSConfig) Apply(conf *tls.Config) error {
+	if tc.CaCertFile != "" {
+		data, err := os.ReadFile(tc.CaCertFile)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		conf.RootCAs.AppendCertsFromPEM(data)
+	}
+	if tc.InsecureSkipVerify {
+		conf.InsecureSkipVerify = tc.InsecureSkipVerify
 	}
 
-	tc.Certificates = append(tc.Certificates, cert)
-	return nil
+	return TLSKeyPair{
+		CertFile: tc.CaCertFile,
+		KeyFile:  tc.KeyFile,
+	}.Apply(conf)
 }
 
+// CertificateLoader loads a tls.Certificate from any source.
+type CertificateLoader interface {
+	LoadCertificate() (*tls.Certificate, error)
+}
+
+var _ CertificateLoader = &TLSKeyPair{}
+var _ TLSOption = &TLSKeyPair{}
+
 // TLSKeyPair contains the paths to a public/private key pair of files.
-type TLSKeyPair [2]string
+type TLSKeyPair struct {
+	CertFile string
+	KeyFile  string
+}
 
 // LoadCertificate reads and parses the key pair files with tls.LoadX509KeyPair.
 // The files must contain PEM encoded data.
-func (kp TLSKeyPair) LoadCertificate() (tls.Certificate, error) {
-	return tls.LoadX509KeyPair(kp[0], kp[1])
+func (kp TLSKeyPair) LoadCertificate() (*tls.Certificate, error) {
+	if kp.CertFile == "" && kp.KeyFile == "" {
+		return nil, nil
+	}
+
+	c, err := tls.LoadX509KeyPair(kp.CertFile, kp.KeyFile)
+	return &c, errors.WithStack(err)
 }
 
-type TLSPemBlocks [2][]byte
+func (kp TLSKeyPair) Apply(conf *tls.Config) error {
+	if c, err := kp.LoadCertificate(); err != nil {
+		return err
+	} else if c != nil {
+		conf.Certificates = append(conf.Certificates, *c)
+	}
 
-func (pb TLSPemBlocks) LoadCertificate() (tls.Certificate, error) {
-	return tls.X509KeyPair(pb[0], pb[1])
+	return nil
+}
+
+var _ CertificateLoader = &TLSPemBlocks{}
+var _ TLSOption = &TLSPemBlocks{}
+
+// certPEMBlock, keyPEMBlock
+type TLSPemBlocks struct {
+	Cert []byte
+	Key  []byte
+}
+
+func (pb TLSPemBlocks) LoadCertificate() (*tls.Certificate, error) {
+	if len(pb.Cert) == 0 && len(pb.Key) == 0 {
+		return nil, nil
+	}
+
+	c, err := tls.X509KeyPair(pb.Cert, pb.Key)
+	return &c, errors.WithStack(err)
+}
+
+func (pb TLSPemBlocks) Apply(conf *tls.Config) error {
+	if c, err := pb.LoadCertificate(); err != nil {
+		return err
+	} else if c != nil {
+		conf.Certificates = append(conf.Certificates, *c)
+	}
+	return nil
 }
