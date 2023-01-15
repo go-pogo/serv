@@ -1,8 +1,8 @@
-// Copyright (c) 2021, Roel Schut. All rights reserved.
+// Copyright (c) 2022, Roel Schut. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package serv
+package middleware
 
 import (
 	"context"
@@ -10,22 +10,36 @@ import (
 	"strings"
 )
 
-// Middleware wraps a http.Handler with additional logic and returns a new
-// http.Handler that executes it.
+// Middleware wraps a http.HandlerFunc with additional logic and returns a new
+// http.Handler.
 type Middleware interface {
-	Wrap(next http.Handler) http.Handler
+	Wrap(next http.HandlerFunc) http.Handler
 }
 
-type MiddlewareFunc func(next http.Handler) http.Handler
+var (
+	_ Middleware = new(MiddlewareFunc)
+	_ Middleware = new(HandlerFunc)
+)
 
-func (fn MiddlewareFunc) Wrap(next http.Handler) http.Handler { return fn(next) }
+type MiddlewareFunc func(next http.HandlerFunc) http.Handler
+
+func (fn MiddlewareFunc) Wrap(next http.HandlerFunc) http.Handler { return fn(next) }
+
+type HandlerFunc http.HandlerFunc
+
+func (fn HandlerFunc) Wrap(next http.HandlerFunc) http.Handler {
+	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
+		fn(wri, req)
+		next(wri, req)
+	})
+}
 
 // Wrap http.Handler h with the provided Middleware.
-func Wrap(h http.Handler, mw ...Middleware) http.Handler {
-	for i := len(mw) - 1; i >= 0; i-- {
-		h = mw[i].Wrap(h)
+func Wrap(handler http.Handler, wrap ...Middleware) http.Handler {
+	for i := len(wrap) - 1; i >= 0; i-- {
+		handler = wrap[i].Wrap(handler.ServeHTTP)
 	}
-	return h
+	return handler
 }
 
 func WithContextValue(key, value interface{}, next http.Handler) http.Handler {
@@ -38,7 +52,7 @@ func WithContextValue(key, value interface{}, next http.Handler) http.Handler {
 }
 
 func WithContextValueM(key, value interface{}) Middleware {
-	return MiddlewareFunc(func(next http.Handler) http.Handler {
+	return MiddlewareFunc(func(next http.HandlerFunc) http.Handler {
 		return WithContextValue(key, value, next)
 	})
 }
@@ -57,7 +71,11 @@ func RemoveTrailingSlash(next http.Handler) http.Handler {
 	})
 }
 
-func RemoveTrailingSlashM() Middleware { return MiddlewareFunc(RemoveTrailingSlash) }
+func RemoveTrailingSlashM() Middleware {
+	return MiddlewareFunc(func(next http.HandlerFunc) http.Handler {
+		return RemoveTrailingSlash(next)
+	})
+}
 
 // RedirectHttps adds middleware that redirects any http request to its https
 // equivalent url.
@@ -74,7 +92,11 @@ func RedirectHttps(next http.Handler) http.Handler {
 	})
 }
 
-func RedirectHttpsM() Middleware { return MiddlewareFunc(RedirectHttps) }
+func RedirectHttpsM() Middleware {
+	return MiddlewareFunc(func(next http.HandlerFunc) http.Handler {
+		return RedirectHttps(next)
+	})
+}
 
 func statusCode(method string) int {
 	switch method {

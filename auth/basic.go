@@ -7,6 +7,7 @@ package auth
 import (
 	"crypto/sha256"
 	"crypto/subtle"
+	"github.com/go-pogo/serv/middleware"
 	"net/http"
 
 	"github.com/go-pogo/serv/httpheader"
@@ -17,14 +18,16 @@ func Basic(user, pass string, next http.Handler) http.Handler {
 		return next
 	}
 
-	return NewBasic(user, pass).Wrap(next)
+	return NewBasicMiddleware(user, pass).Wrap(next.ServeHTTP)
 }
+
+var _ middleware.Middleware = new(BasicMiddleware)
 
 type BasicMiddleware struct {
 	user, pass [sha256.Size]byte
 }
 
-func NewBasic(user, pass string) *BasicMiddleware {
+func NewBasicMiddleware(user, pass string) *BasicMiddleware {
 	var h BasicMiddleware
 	h.SetUser(user)
 	h.SetPass(pass)
@@ -34,7 +37,7 @@ func NewBasic(user, pass string) *BasicMiddleware {
 func (h *BasicMiddleware) SetUser(v string) { h.user = sha256.Sum256([]byte(v)) }
 func (h *BasicMiddleware) SetPass(v string) { h.pass = sha256.Sum256([]byte(v)) }
 
-func (h *BasicMiddleware) Wrap(next http.Handler) http.Handler {
+func (h *BasicMiddleware) Wrap(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
 		if u, p, submitted := req.BasicAuth(); submitted {
 			uh := sha256.Sum256([]byte(u))
@@ -42,7 +45,7 @@ func (h *BasicMiddleware) Wrap(next http.Handler) http.Handler {
 
 			if subtle.ConstantTimeCompare(h.user[:], uh[:]) == 1 &&
 				subtle.ConstantTimeCompare(h.pass[:], ph[:]) == 1 {
-				next.ServeHTTP(wri, req)
+				next(wri, req)
 				return
 			}
 		}
