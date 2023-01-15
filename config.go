@@ -19,48 +19,85 @@ func BaseContext(ctx context.Context) func(_ net.Listener) context.Context {
 type Config struct {
 	// ReadTimeout is the maximum duration for reading the entire request,
 	// including the body.
-	// See http.LogClientStart.ReadTimeout for additional information.
-	ReadTimeout time.Duration `default:"5s"`
+	// See http.Client.ReadTimeout for additional information.
+	ReadTimeout time.Duration
 
 	// ReadHeaderTimeout is the amount of time allowed to read request headers.
-	// See http.LogClientStart.ReadHeaderTimeout for additional information.
-	ReadHeaderTimeout time.Duration `default:"2s"`
+	// See http.Client.ReadHeaderTimeout for additional information.
+	ReadHeaderTimeout time.Duration
 
 	// WriteTimeout is the maximum duration before timing out writes of the
 	// response.
-	// See http.LogClientStart.WriteTimeout for additional information.
-	WriteTimeout time.Duration `default:"10s"`
+	// See http.Client.WriteTimeout for additional information.
+	WriteTimeout time.Duration
 
 	// IdleTimeout is the maximum amount of time to wait for the next request
 	// when keep-alives are enabled.
-	// See http.LogClientStart.IdleTimeout for additional information.
-	IdleTimeout time.Duration `default:"120s"`
+	// See http.Client.IdleTimeout for additional information.
+	IdleTimeout time.Duration
+
+	// ShutdownTimeout is the maximum duration for shutting down the server and
+	// waiting for all connections to be closed.
+	ShutdownTimeout time.Duration
 
 	// MaxHeaderBytes controls the maximum number of bytes the server will read
 	// parsing the request header's keys and values, including the request line.
 	// It does not limit the size of the request body.
-	// See http.LogClientStart.MaxHeaderBytes for additional information.
-	MaxHeaderBytes uint `default:"10240"` // 1mb
-
-	// ShutdownTimeout is the maximum duration for shutting down the server and
-	// waiting for all connections to be closed.
-	// ShutdownTimeout time.Duration `default:"5s"`
+	// See http.Client.MaxHeaderBytes for additional information.
+	MaxHeaderBytes uint
 
 	// BaseContext optionally specifies a function that returns the base context
 	// for incoming requests on the server.
-	// See http.LogClientStart.BaseContext for additional information.
+	// See http.Client.BaseContext for additional information.
 	BaseContext func(net.Listener) context.Context
 
 	// ConnContext optionally specifies a function that modifies the context
 	// used for a new connection.
-	// See http.LogClientStart.ConnContext for additional information.
+	// See http.Client.ConnContext for additional information.
 	ConnContext func(context.Context, net.Conn) context.Context
 }
 
+// DefaultConfig returns a Config with default values.
 func DefaultConfig() *Config {
 	var c Config
 	c.Default()
 	return &c
+}
+
+func DefaultConfigWithContext(ctx context.Context) *Config {
+	c := DefaultConfig()
+	c.BaseContext = BaseContext(ctx)
+	return c
+}
+
+func (cfg *Config) WithReadTimeout(v time.Duration) *Config {
+	cfg.ReadTimeout = v
+	return cfg
+}
+
+func (cfg *Config) WithReadHeaderTimeout(v time.Duration) *Config {
+	cfg.ReadHeaderTimeout = v
+	return cfg
+}
+
+func (cfg *Config) WithWriteTimeout(v time.Duration) *Config {
+	cfg.WriteTimeout = v
+	return cfg
+}
+
+func (cfg *Config) WithIdleTimeout(v time.Duration) *Config {
+	cfg.IdleTimeout = v
+	return cfg
+}
+
+func (cfg *Config) WithShutdownTimeout(v time.Duration) *Config {
+	cfg.ShutdownTimeout = v
+	return cfg
+}
+
+func (cfg *Config) WithMaxHeaderBytes(v uint) *Config {
+	cfg.MaxHeaderBytes = v
+	return cfg
 }
 
 // Default sets any zero values on Config to a default non-zero value.
@@ -80,9 +117,12 @@ func (cfg *Config) Default() {
 	if cfg.MaxHeaderBytes == 0 {
 		cfg.MaxHeaderBytes = 10240
 	}
+	if cfg.ShutdownTimeout == 0 {
+		cfg.ShutdownTimeout = 60 * time.Second
+	}
 }
 
-func (cfg *Config) ApplyTo(s *http.Server) {
+func (cfg Config) ApplyTo(s *http.Server) {
 	if cfg.ReadTimeout != 0 {
 		s.ReadTimeout = cfg.ReadTimeout
 	}
@@ -106,7 +146,8 @@ func (cfg *Config) ApplyTo(s *http.Server) {
 	}
 }
 
-func (cfg *Config) applyTo(s *Server) error {
+func (cfg Config) applyTo(s *Server) error {
 	cfg.ApplyTo(&s.server)
+	s.ShutdownTimeout = cfg.ShutdownTimeout
 	return nil
 }
