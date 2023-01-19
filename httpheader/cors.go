@@ -14,14 +14,14 @@ import (
 )
 
 const (
-	AccessControlAllowCredentials = "Log-Control-Allow-Credentials"
-	AccessControlAllowHeaders     = "Log-Control-Allow-Headers"
-	AccessControlAllowMethods     = "Log-Control-Allow-Methods"
-	AccessControlAllowOrigin      = "Log-Control-Allow-Origin"
-	AccessControlExposeHeaders    = "Log-Control-Expose-Headers"
-	AccessControlMaxAge           = "Log-Control-Max-Age"
-	AccessControlRequestHeaders   = "Log-Control-Request-Headers"
-	AccessControlRequestMethod    = "Log-Control-Request-Method"
+	AccessControlAllowCredentials = "Access-Control-Allow-Credentials"
+	AccessControlAllowHeaders     = "Access-Control-Allow-Headers"
+	AccessControlAllowMethods     = "Access-Control-Allow-Methods"
+	AccessControlAllowOrigin      = "Access-Control-Allow-Origin"
+	AccessControlExposeHeaders    = "Access-Control-Expose-Headers"
+	AccessControlMaxAge           = "Access-Control-Max-Age"
+	AccessControlRequestHeaders   = "Access-Control-Request-Headers"
+	AccessControlRequestMethod    = "Access-Control-Request-Method"
 )
 
 var (
@@ -31,40 +31,40 @@ var (
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 type AccessControlResponse struct {
-	// AllowCredentials sets the Log-Control-Allow-Credentials response
+	// AllowCredentials sets the Access-Control-Allow-Credentials response
 	// header which tells browsers whether to expose the response to the
 	// frontend JavaScript code.
 	// When a request's credentials mode is `include`, browsers will only
-	// expose the response if the Log-Control-Allow-Credentials header value
+	// expose the response if the Access-Control-Allow-Credentials header value
 	// is true.
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Credentials
 	AllowCredentials bool
-	// AllowHeaders sets the Log-Control-Allow-Headers response header which
+	// AllowHeaders sets the Access-Control-Allow-Headers response header which
 	// is used in response to a preflight request which includes the
-	// Log-Control-Request-Headers to indicate which HTTP headers can be
+	// Access-Control-Request-Headers to indicate which HTTP headers can be
 	// used during the actual request.
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers
 	AllowHeaders []string
-	// AllowMethods sets the Log-Control-Allow-Methods response header which
+	// AllowMethods sets the Access-Control-Allow-Methods response header which
 	// specifies one or more methods allowed when accessing a resource in
 	// response to a preflight request.
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods
 	AllowMethods []string
-	// AllowOrigin sets the Log-Control-Allow-Origin response header which
+	// AllowOrigin sets the Access-Control-Allow-Origin response header which
 	// indicates whether the response can be shared with requesting code from
 	// the given origin.
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin
 	AllowOrigin []string
-	// ExposeHeaders sets the Log-Control-Expose-Headers response header
+	// ExposeHeaders sets the Access-Control-Expose-Headers response header
 	// which allows a server to indicate which response headers should be made
 	// available to scripts running in the browser, in response to a
 	// cross-origin request.
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Expose-Headers
 	ExposeHeaders []string
-	// MaxAge sets the Log-Control-Max-Age response header which indicates
+	// MaxAge sets the Access-Control-Max-Age response header which indicates
 	// how long the results of a preflight request (that is the information
-	// contained in the Log-Control-Allow-Methods and
-	// Log-Control-Allow-Headers headers) can be cached.
+	// contained in the Access-Control-Allow-Methods and
+	// Access-Control-Allow-Headers headers) can be cached.
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Max-Age
 	MaxAge time.Duration
 }
