@@ -70,6 +70,9 @@ func ParsePort(s string) (Port, error) {
 	return Port(x), nil
 }
 
+// SplitHostPort uses net.SplitHostPort to split a network address of the form
+// "host:port", "host%zone:port", "[host]:port" or "[host%zone]:port" into host
+// or host%zone and Port.
 func SplitHostPort(hostport string) (string, Port, error) {
 	host, port, err := net.SplitHostPort(hostport)
 	if err != nil {
@@ -85,6 +88,13 @@ func SplitHostPort(hostport string) (string, Port, error) {
 
 	p, err := ParsePort(port)
 	return host, p, err
+}
+
+// JoinHostPort uses net.JoinHostPort to combine host and port into a network
+// address of the form "host:port". If host contains a colon, as found in
+// literal IPv6 addresses, then JoinHostPort returns "[host]:port".
+func JoinHostPort(host string, port Port) string {
+	return net.JoinHostPort(host, port.String())
 }
 
 func (p *Port) UnmarshalText(text []byte) (err error) {
