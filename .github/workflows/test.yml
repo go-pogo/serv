@@ -25,3 +25,6 @@ jobs:
 
       - name: Run tests
         run: go test -race -v
+
+      - name: Run tests with cors_unsafe
+        run: go test -tags cors_unsafe -race -v
