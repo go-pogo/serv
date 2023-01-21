@@ -30,8 +30,9 @@ func (fn optionFunc) applyTo(s *Server) error { return fn(s) }
 
 type server = http.Server
 
-// Server is a wrapper for a standard http.ServerLogger.
-// The zero value is safe and ready to use and will applyTo safe defaults on serving.
+// Server is a wrapper for a standard http.Server.
+// The zero value is safe and ready to use, and will apply safe defaults on
+// starting the server.
 type Server struct {
 	server
 	log     Logger
@@ -154,14 +155,14 @@ func (srv *Server) Run(ctx context.Context) error {
 	return srv.ListenAndServe()
 }
 
-// RegisterOnShutdown registers a function to the underlying http.ServerLogger, which
+// RegisterOnShutdown registers a function to the underlying http.Server, which
 // is called on Shutdown.
 func (srv *Server) RegisterOnShutdown(fn func()) {
 	srv.server.RegisterOnShutdown(fn)
 }
 
 // Shutdown gracefully shuts down the server without interrupting any active
-// connections. Just like the underlying http.ServerLogger, Shutdown works by first
+// connections. Just like the underlying http.Server, Shutdown works by first
 // closing all open listeners, then closing all idle connections, and then
 // waiting indefinitely for connections to return to idle and then shut down.
 // If ShutdownTimeout is set and/or the provided context expires before the
@@ -176,11 +177,8 @@ func (srv *Server) Shutdown(ctx context.Context) error {
 	srv.log.ServerShutdown()
 	srv.server.SetKeepAlivesEnabled(false)
 
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	if srv.ShutdownTimeout == 0 {
-		if t, ok := ctx.Deadline(); !ok || srv.ShutdownTimeout < t.Sub(time.Now()) {
+	if srv.ShutdownTimeout != 0 {
+		if t, ok := ctx.Deadline(); !ok || srv.ShutdownTimeout < time.Until(t) {
 			// shutdown timeout is set to a lower value, update context
 			var cancelFn context.CancelFunc
 			ctx, cancelFn = context.WithTimeout(ctx, srv.ShutdownTimeout)

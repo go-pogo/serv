@@ -62,10 +62,7 @@ func main() {
 
 	<-ctx.Done()
 
-	ctx, closeFn := context.WithTimeout(context.Background(), time.Second*3)
-	defer closeFn()
-
-	if err = server.Shutdown(nil); err != nil {
+	if err = server.Shutdown(context.Background()); err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
 			_, _ = fmt.Fprintf(os.Stderr, "\nShutdown error: %+v\n", err)
 		} else if err = server.Close(); err != nil {
