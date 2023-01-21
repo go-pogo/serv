@@ -147,8 +147,7 @@ func (srv *Server) Run(ctx context.Context) error {
 
 	if srv.server.TLSConfig != nil &&
 		(len(srv.server.TLSConfig.Certificates) != 0 ||
-			srv.server.TLSConfig.GetCertificate != nil ||
-			len(srv.server.TLSConfig.NameToCertificate) != 0) {
+			srv.server.TLSConfig.GetCertificate != nil) {
 		return srv.ListenAndServeTLS("", "")
 	}
 
