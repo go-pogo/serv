@@ -26,7 +26,10 @@ func WithHandlerNameM(name string) middleware.Middleware {
 // HandlerName gets the handler name from the context values which may be an
 // empty string.
 func HandlerName(ctx context.Context) string {
-	return ctx.Value(handlerNameKey{}).(string)
+	if v := ctx.Value(handlerNameKey{}); v != nil {
+		return v.(string)
+	}
+	return ""
 }
 
 // HandlerNameOr uses HandlerName to get the handler name from the context
