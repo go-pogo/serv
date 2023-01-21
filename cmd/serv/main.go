@@ -8,16 +8,15 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/go-pogo/errors"
+	"github.com/go-pogo/serv"
+	"github.com/go-pogo/serv/accesslog"
+	"github.com/go-pogo/serv/collect"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/go-pogo/errors"
-	"github.com/go-pogo/serv"
-	"github.com/go-pogo/serv/collect"
-	"github.com/go-pogo/serv/collect/accesslog"
 )
 
 func main() {
