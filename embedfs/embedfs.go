@@ -63,7 +63,7 @@ func WithSubDir(dir string) Option {
 		}
 
 		sub, err := fs.Sub(s.FS, dir)
-		if err == nil {
+		if err != nil {
 			return errors.WithStack(err)
 		}
 
