@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package collect
+package accesslog
 
 import (
 	"context"
@@ -29,20 +29,20 @@ func (l ResponseStatus) InRange(statusCode int) bool {
 		(l&ResponseStatusServerError != 0 && statusCode >= 500 && statusCode <= 599)
 }
 
-func LimitCodes(stat ResponseStatus, next Collector) Collector {
+func LimitCodes(rs ResponseStatus, next Logger) Logger {
 	if next == nil {
 		return nil
 	}
 
-	switch stat {
+	switch rs {
 	case ResponseStatusNone:
 		return nil
 	case ResponseStatusAll:
 		return next
 	}
-	return CollectorFunc(func(ctx context.Context, met Metrics, req *http.Request) {
-		if stat.InRange(met.Code) {
-			next.Collect(ctx, met, req)
+	return loggerFunc(func(ctx context.Context, det Details, req *http.Request) {
+		if rs.InRange(det.StatusCode) {
+			next.Log(ctx, det, req)
 		}
 	})
 }

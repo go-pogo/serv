@@ -6,51 +6,106 @@ package accesslog
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"io"
+	"net"
 	"net/http"
-
-	"github.com/go-pogo/serv/collect"
+	"os"
 )
 
-func Collector() collect.Collector {
-	return collect.CollectorFunc(func(ctx context.Context, met collect.Metrics, req *http.Request) {
-		log.Printf("%s %s \"%s %s %s\" %d %db\n",
-			RemoteAddr(req),
-			collect.HandlerNameOr(ctx, "-"),
-			req.Method,
-			RequestURI(req),
-			req.Proto,
-			met.Code,
-			met.Written,
-		)
-	})
-}
+const TimeLayout string = "02/Jan/2006:15:04:05 -0700"
 
 type Logger interface {
-	Log(ctx context.Context, entry Entry)
+	Log(ctx context.Context, det Details, req *http.Request)
 }
 
-type LoggerFunc func(ctx context.Context, entry Entry)
+type loggerFunc func(ctx context.Context, det Details, req *http.Request)
 
-func (fn LoggerFunc) Log(ctx context.Context, entry Entry) { fn(ctx, entry) }
+func (fn loggerFunc) Log(ctx context.Context, det Details, req *http.Request) { fn(ctx, det, req) }
 
-func Log(l Logger) collect.Collector {
-	if l == nil {
-		return nil
+var _ Logger = new(DefaultLogger)
+
+type DefaultLogger struct{ io.Writer }
+
+// https://httpd.apache.org/docs/current/logs.html#common
+type ApacheLogger struct{ io.Writer }
+
+func (l *DefaultLogger) Log(_ context.Context, det Details, req *http.Request) {
+	if l.Writer == nil {
+		l.Writer = os.Stdout
 	}
 
-	return collect.CollectorFunc(func(ctx context.Context, met collect.Metrics, req *http.Request) {
-		l.Log(ctx, Entry{
-			Request: req,
-			Metrics: met,
-		})
-	})
+	_, _ = fmt.Fprintf(l, "%s %s \"%s %s %s\" %d %db\n",
+		RemoteAddr(req),
+		or(det.HandlerName, "-"),
+		req.Method,
+		RequestURI(req),
+		req.Proto,
+		det.StatusCode,
+		det.BytesWritten,
+	)
 }
 
-var nop Logger = new(nopLogger)
+func (l *ApacheLogger) Log(_ context.Context, det Details, req *http.Request) {
+	if l.Writer == nil {
+		l.Writer = os.Stdout
+	}
+
+	_, _ = fmt.Fprintf(l, "%s - %s [%s] \"%s %s %s\" %d %d\n",
+		RemoteAddr(req),
+		or(Username(req), "-"),
+		det.StartTime.Format(TimeLayout),
+		req.Method,
+		RequestURI(req),
+		req.Proto,
+		det.StatusCode,
+		det.BytesWritten,
+	)
+}
+
+// RemoteAddr returns a sanitize                                                                d remote address from
+// the/http.Request.
+func RemoteAddr(r *http.Request) string {
+	addr, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return addr
+}
+
+// RequestURI
+// https://www.rfc-editor.org/rfc/rfc7540#section-8.3
+func RequestURI(r *http.Request) string {
+	var uri string
+	if r.ProtoMajor == 2 && r.Method == "CONNECT" {
+		uri = r.Host
+	} else {
+		uri = r.RequestURI
+	}
+	if uri == "" {
+		uri = r.URL.RequestURI()
+	}
+	return uri
+}
+
+func Username(r *http.Request) string {
+	if r.URL != nil && r.URL.User != nil {
+		if user := r.URL.User.Username(); user != "" {
+			return user
+		}
+	}
+	return ""
+}
+
+func or(a, b string) string {
+	if a == "" {
+		return b
+	}
+	return a
+}
 
 type nopLogger struct{}
 
-func NopLogger() Logger { return nop }
+func NopLogger() Logger { return new(nopLogger) }
 
-func (*nopLogger) Log(context.Context, Entry) {}
+func (*nopLogger) Log(context.Context, Details, *http.Request) {}
