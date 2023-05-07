@@ -6,12 +6,12 @@ package serv
 
 import (
 	"context"
+	"github.com/go-pogo/errors"
+	"github.com/go-pogo/serv/middleware"
 	"net"
 	"net/http"
 	"sync/atomic"
 	"time"
-
-	"github.com/go-pogo/errors"
 )
 
 const (
@@ -19,14 +19,6 @@ const (
 	ErrUnstartedShutdown errors.Msg = "shutting down unstarted server"
 	ErrUnstartedClose    errors.Msg = "closing unstarted server"
 )
-
-type Option interface {
-	applyTo(s *Server) error
-}
-
-type optionFunc func(s *Server) error
-
-func (fn optionFunc) applyTo(s *Server) error { return fn(s) }
 
 type server = http.Server
 
@@ -36,11 +28,14 @@ type server = http.Server
 type Server struct {
 	server
 	log     Logger
+	mware   []middleware.Middleware
+	name    string
 	started uint32
 
 	ShutdownTimeout time.Duration
 }
 
+// New creates a new Server.
 func New(mux http.Handler, opts ...Option) (*Server, error) {
 	var srv Server
 	srv.Handler = mux
@@ -51,16 +46,9 @@ func New(mux http.Handler, opts ...Option) (*Server, error) {
 	return &srv, nil
 }
 
+// NewDefault creates a new Server with DefaultConfig applied to it.
 func NewDefault(mux http.Handler, opts ...Option) (*Server, error) {
-	var srv Server
-	srv.Handler = mux
-	// default Config never returns an error
-	_ = DefaultConfig().applyTo(&srv)
-
-	if err := srv.apply(opts); err != nil {
-		return nil, err
-	}
-	return &srv, nil
+	return New(mux, DefaultConfig(), WithOptions(opts...))
 }
 
 func (srv *Server) apply(opts []Option) error {
@@ -83,11 +71,17 @@ func (srv *Server) start() error {
 	if srv.log == nil {
 		srv.log = NopLogger()
 	}
+	if len(srv.mware) != 0 {
+		srv.Handler = middleware.Wrap(srv.Handler, srv.mware...)
+		srv.mware = nil
+	}
 
-	srv.log.ServerStart(srv.Addr)
+	srv.log.ServerStart(srv.name, srv.Addr)
 	atomic.StoreUint32(&srv.started, 1)
 	return nil
 }
+
+func (srv *Server) Name() string { return srv.name }
 
 func (srv *Server) Serve(l net.Listener) error {
 	if err := srv.start(); err != nil {
@@ -173,7 +167,7 @@ func (srv *Server) Shutdown(ctx context.Context) error {
 		return errors.New(ErrUnstartedShutdown)
 	}
 
-	srv.log.ServerShutdown()
+	srv.log.ServerShutdown(srv.name)
 	srv.server.SetKeepAlivesEnabled(false)
 
 	if srv.ShutdownTimeout != 0 {
@@ -197,6 +191,6 @@ func (srv *Server) Close() error {
 		return errors.New(ErrUnstartedClose)
 	}
 
-	srv.log.ServerClose()
+	srv.log.ServerClose(srv.name)
 	return srv.server.Close()
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/go-pogo/errors"
 	"github.com/go-pogo/serv"
 	"github.com/go-pogo/serv/accesslog"
-	"github.com/go-pogo/serv/collect"
 	"net/http"
 	"os"
 	"os/signal"
@@ -35,17 +34,16 @@ func main() {
 	handler = http.TimeoutHandler(handler, time.Second, "")
 
 	router := http.NewServeMux()
-	router.Handle("/", handler)
+	router.Handle("/", serv.WithHandlerName("files", handler))
 
 	server, err := serv.NewDefault(
-		collect.Wrap(router,
-			collect.LimitCodes(
-				collect.ResponseStatusErrors,
-				accesslog.Collector(),
-			),
-		),
+		router,
 		port,
+		serv.WithName("serv"),
 		serv.WithLogger(new(serv.DefaultLogger)),
+		serv.WithMiddleware(
+			accesslog.Middleware(new(accesslog.DefaultLogger)),
+		),
 	)
 	errors.FatalOnErr(err)
 

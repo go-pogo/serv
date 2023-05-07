@@ -6,9 +6,8 @@ package serv
 
 import (
 	"crypto/tls"
-	"os"
-
 	"github.com/go-pogo/errors"
+	"os"
 )
 
 // DefaultTLSConfig returns a modern preconfigured tls.Config.

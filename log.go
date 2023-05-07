@@ -4,14 +4,17 @@
 
 package serv
 
-import "log"
+import (
+	"log"
+	"strings"
+)
 
 const panicNilLogger = "serv.WithLogger: Logger should not be nil"
 
 type Logger interface {
-	ServerStart(addr string)
-	ServerShutdown()
-	ServerClose()
+	ServerStart(name, addr string)
+	ServerShutdown(name string)
+	ServerClose(name string)
 }
 
 type RouterLogger interface {
@@ -32,22 +35,22 @@ type DefaultLogger struct {
 	Logger *log.Logger
 }
 
-func (l *DefaultLogger) log(v ...interface{}) {
+func (l *DefaultLogger) log(v ...string) {
 	if l.Logger == nil {
-		log.Println(v...)
+		log.Println(strings.Join(v, " "))
 	} else {
-		l.Logger.Println(v...)
+		l.Logger.Println(strings.Join(v, " "))
 	}
 }
 
-func (l *DefaultLogger) ServerStart(addr string) { l.log("starting server on", addr) }
-func (l *DefaultLogger) ServerShutdown()         { l.log("server shutdown") }
-func (l *DefaultLogger) ServerClose()            { l.log("server close") }
+func (l *DefaultLogger) ServerStart(name, addr string) { l.log("server", name, "starting on", addr) }
+func (l *DefaultLogger) ServerShutdown(name string)    { l.log("server", name, "shutting down") }
+func (l *DefaultLogger) ServerClose(name string)       { l.log("server", name, "closing") }
 
 func NopLogger() Logger { return new(nopLogger) }
 
 type nopLogger struct{}
 
-func (*nopLogger) ServerStart(string) {}
-func (*nopLogger) ServerShutdown()    {}
-func (*nopLogger) ServerClose()       {}
+func (*nopLogger) ServerStart(_, _ string) {}
+func (*nopLogger) ServerShutdown(string)   {}
+func (*nopLogger) ServerClose(string)      {}

@@ -122,7 +122,8 @@ func (cfg *Config) Default() {
 	}
 }
 
-func (cfg Config) ApplyTo(s *http.Server) {
+// ApplyTo applies the Config fields values to *http.Server s.
+func (cfg *Config) ApplyTo(s *http.Server) {
 	if cfg.ReadTimeout != 0 {
 		s.ReadTimeout = cfg.ReadTimeout
 	}
@@ -146,7 +147,7 @@ func (cfg Config) ApplyTo(s *http.Server) {
 	}
 }
 
-func (cfg Config) applyTo(s *Server) error {
+func (cfg *Config) applyTo(s *Server) error {
 	cfg.ApplyTo(&s.server)
 	s.ShutdownTimeout = cfg.ShutdownTimeout
 	return nil
