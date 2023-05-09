@@ -34,7 +34,7 @@ func main() {
 	handler = http.TimeoutHandler(handler, time.Second, "")
 
 	router := http.NewServeMux()
-	router.Handle("/", serv.WithHandlerName("files", handler))
+	router.Handle("/", accesslog.WithHandlerName("files", handler))
 
 	server, err := serv.NewDefault(
 		router,

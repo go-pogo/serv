@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package serv
+package accesslog
 
 import (
 	"context"
@@ -11,18 +11,6 @@ import (
 	"net/http"
 	"testing"
 )
-
-func TestServerName(t *testing.T) {
-	t.Run("empty value", func(t *testing.T) {
-		assert.Equal(t, "", ServerName(context.Background()))
-	})
-
-	t.Run("value", func(t *testing.T) {
-		want := "foobar"
-		ctx := context.WithValue(context.Background(), serverNameKey{}, want)
-		assert.Equal(t, want, ServerName(ctx))
-	})
-}
 
 func TestHandlerName(t *testing.T) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)

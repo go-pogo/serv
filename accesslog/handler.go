@@ -30,7 +30,7 @@ type Details struct {
 	Duration time.Duration
 	// BytesWritten is the number of bytes successfully written by the Write or
 	// ReadFrom function of the ResponseWriter. ResponseWriters may also write
-	// data to their underlaying connection directly (e.g. headers), but those
+	// data to their underlying connection directly (e.g. headers), but those
 	// are not tracked. Therefor the number of BytesWritten bytes will usually
 	// match the size of the response body.
 	BytesWritten int64
@@ -74,7 +74,7 @@ func (c *handler) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 
 	ctx := req.Context()
 	det.ServerName = serv.ServerName(ctx)
-	det.HandlerName = serv.HandlerName(ctx)
+	det.HandlerName = HandlerName(ctx)
 
 	c.log.Log(ctx, det, req.Clone(&noopCtx{ctx}))
 }

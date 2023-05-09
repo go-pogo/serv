@@ -4,7 +4,10 @@
 
 package serv
 
-import "github.com/go-pogo/serv/middleware"
+import (
+	"context"
+	"github.com/go-pogo/serv/middleware"
+)
 
 type Option interface {
 	applyTo(s *Server) error
@@ -39,4 +42,25 @@ func WithMiddleware(mw ...middleware.Middleware) Option {
 		}
 		return nil
 	})
+}
+
+type serverNameKey struct{}
+
+// WithName adds the server's name as value to the request's context.
+func WithName(name string) Option {
+	return optionFunc(func(s *Server) error {
+		s.name = name
+		return WithMiddleware(middleware.WithContextValue(
+			serverNameKey{},
+			name,
+		)).applyTo(s)
+	})
+}
+
+// ServerName gets the name from the context values which may be an empty string.
+func ServerName(ctx context.Context) string {
+	if v := ctx.Value(serverNameKey{}); v != nil {
+		return v.(string)
+	}
+	return ""
 }
