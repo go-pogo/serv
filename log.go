@@ -17,10 +17,6 @@ type Logger interface {
 	ServerClose(name string)
 }
 
-type RouterLogger interface {
-	RegisterRoute(name, method, path string)
-}
-
 func WithLogger(l Logger) Option {
 	if l == nil {
 		panic(panicNilLogger)
