@@ -9,8 +9,6 @@ import (
 	"crypto/subtle"
 	"github.com/go-pogo/serv/middleware"
 	"net/http"
-
-	"github.com/go-pogo/serv/httpheader"
 )
 
 func Basic(user, pass string, next http.Handler) http.Handler {
@@ -50,7 +48,7 @@ func (h *BasicMiddleware) Wrap(next http.HandlerFunc) http.Handler {
 			}
 		}
 
-		wri.Header().Set(httpheader.WWWAuthenticate, `Basic charset="UTF-8"`)
+		wri.Header().Set("WWW-Authenticate", `Basic charset="UTF-8"`)
 		http.Error(wri, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 	})
 }
