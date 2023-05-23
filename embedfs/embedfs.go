@@ -6,7 +6,6 @@ package embedfs
 
 import (
 	"github.com/go-pogo/errors"
-	"github.com/go-pogo/serv/httpheader"
 	"io/fs"
 	"net/http"
 	"time"
@@ -25,8 +24,7 @@ var _ http.Handler = new(FileServer)
 type FileServer struct {
 	FS
 	handler http.Handler
-
-	ModTime time.Time
+	modTime time.Time
 }
 
 func New(embed FS, opts ...Option) (*FileServer, error) {
@@ -41,6 +39,8 @@ func New(embed FS, opts ...Option) (*FileServer, error) {
 	return s, nil
 }
 
+func (s *FileServer) ModTime() time.Time { return s.modTime }
+
 func (s *FileServer) applyOpts(opts []Option) error {
 	var err error
 	for _, opt := range opts {
@@ -51,8 +51,8 @@ func (s *FileServer) applyOpts(opts []Option) error {
 
 func (s *FileServer) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 	s.handler.ServeHTTP(wri, req)
-	if !s.ModTime.IsZero() {
-		httpheader.SetLastModified(wri.Header(), s.ModTime.UTC())
+	if !s.modTime.IsZero() {
+		wri.Header().Set("Last-Modified", s.modTime.Format(http.TimeFormat))
 	}
 }
 
@@ -74,7 +74,7 @@ func WithSubDir(dir string) Option {
 
 func WithModTime(t time.Time) Option {
 	return func(s *FileServer) error {
-		s.ModTime = t
+		s.modTime = t.UTC()
 		return nil
 	}
 }
