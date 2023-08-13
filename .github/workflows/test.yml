@@ -21,7 +21,7 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: Get dependencies
-        run: go get -v -t -d ./...
+        run: go mod download
 
       - name: Run tests
         run: go test -race -v -count=1 ./...

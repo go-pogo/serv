@@ -1,11 +1,11 @@
 module github.com/go-pogo/serv
 
-go 1.19
+go 1.20
 
 require (
 	github.com/felixge/httpsnoop v1.0.3
 	github.com/go-pogo/errors v0.8.0
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.40.0
 	go.opentelemetry.io/otel v1.15.0
 	go.opentelemetry.io/otel/sdk v1.15.0
