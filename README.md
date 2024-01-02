@@ -9,7 +9,7 @@ serv
 
 [latest-release-url]: https://github.com/go-pogo/serv/releases
 
-[build-status-img]: https://github.com/go-pogo/serv/workflows/Go/badge.svg
+[build-status-img]: https://github.com/go-pogo/serv/actions/workflows/test.yml/badge.svg
 
 [build-status-url]: https://github.com/go-pogo/serv/actions/workflows/test.yml
 
@@ -42,6 +42,6 @@ Additional detailed documentation is available at [pkg.go.dev][doc-url]
 
 ## License
 
-Copyright © 2021-2023 [Roel Schut](https://roelschut.nl). All rights reserved.
+Copyright © 2021-2024 [Roel Schut](https://roelschut.nl). All rights reserved.
 
 This project is governed by a BSD-style license that can be found in the [LICENSE](LICENSE) file.
