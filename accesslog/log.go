@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-const Prefix string = "access request"
+const Message string = "access request"
 
 type Logger interface {
 	Log(ctx context.Context, det Details, req *http.Request)
@@ -35,8 +35,8 @@ func (l *defaultLogger) Log(_ context.Context, det Details, req *http.Request) {
 		handlerName = "-"
 	}
 
-	l.Printf("%s: %s %s \"%s %s %s\" %d %db\n",
-		Prefix,
+	l.Printf("%s: %s %s \"%s %s %s\" %d %db %s\n",
+		Message,
 		RemoteAddr(req),
 		handlerName,
 		req.Method,
@@ -44,6 +44,7 @@ func (l *defaultLogger) Log(_ context.Context, det Details, req *http.Request) {
 		req.Proto,
 		det.StatusCode,
 		det.BytesWritten,
+		det.Duration,
 	)
 }
 

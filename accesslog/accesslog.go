@@ -15,20 +15,18 @@ import (
 type Details struct {
 	ServerName  string
 	HandlerName string
+	UserAgent   string
 
 	// StatusCode is the first http response code passed to the WriteHeader func
-	// of the ResponseWriter. If no such call is made, a default code of 200 is
-	// assumed instead.
+	// of the ResponseWriter. See httpsnoop.Metrics for additional information.
 	StatusCode int
 	// StartTime is the time the request was received.
 	StartTime time.Time
 	// Duration is the time it took to execute the handler.
 	Duration time.Duration
 	// BytesWritten is the number of bytes successfully written by the Write or
-	// ReadFrom function of the ResponseWriter. ResponseWriters may also write
-	// data to their underlying connection directly (e.g. headers), but those
-	// are not tracked. Therefor the number of BytesWritten bytes will usually
-	// match the size of the response body.
+	// ReadFrom function of the ResponseWriter. See httpsnoop.Metrics for
+	// additional information.
 	BytesWritten int64
 	// RequestCount is the amount of open requests during the execution of the
 	// handler.

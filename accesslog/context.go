@@ -20,14 +20,22 @@ func WithHandlerName(name string, next http.Handler) http.Handler {
 
 // SetHandlerName adds name as the value for handler name to the context.
 func SetHandlerName(ctx context.Context, name string) context.Context {
-	return context.WithValue(ctx, handlerNameKey{}, name)
+	if v := ctx.Value(handlerNameKey{}); v != nil {
+		*v.(*string) = name
+		return ctx
+	}
+	return setHandlerName(ctx, &name)
+}
+
+func setHandlerName(ctx context.Context, ptr *string) context.Context {
+	return context.WithValue(ctx, handlerNameKey{}, ptr)
 }
 
 // HandlerName gets the handler name from the context values.
 // It may be an empty string.
 func HandlerName(ctx context.Context) string {
 	if v := ctx.Value(handlerNameKey{}); v != nil {
-		return v.(string)
+		return *v.(*string)
 	}
 	return ""
 }

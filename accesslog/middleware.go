@@ -45,14 +45,17 @@ func (c *handler) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 	det.RequestCount = atomic.AddInt64(&c.traffic, 1)
 	defer atomic.AddInt64(&c.traffic, -1)
 
-	met := httpsnoop.CaptureMetrics(c.next, wri, req)
+	// create a string pointer for the handler name, so we can populate
+	// this with the correct value in the handler itself
+	ctx := setHandlerName(req.Context(), new(string))
+	met := httpsnoop.CaptureMetrics(c.next, wri, req.WithContext(ctx))
+
 	det.StatusCode = met.Code
 	det.Duration = met.Duration
 	det.BytesWritten = met.Written
-
-	ctx := req.Context()
 	det.ServerName = serv.ServerName(ctx)
 	det.HandlerName = HandlerName(ctx)
+	det.UserAgent = req.UserAgent()
 
 	c.log.Log(ctx, det, req.Clone(&noopCtx{ctx}))
 }
