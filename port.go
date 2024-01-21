@@ -6,6 +6,7 @@ package serv
 
 import (
 	"encoding"
+	"flag"
 	"fmt"
 	"github.com/go-pogo/errors"
 	"net"
@@ -19,49 +20,51 @@ const (
 )
 
 type PortParseError struct {
-	Err  error
-	Text string
+	// Cause is the underlying error. It is never nil.
+	Cause error
+	// Input string that triggered the error
+	Input string
 }
 
-func (p *PortParseError) Unwrap() error { return p.Err }
+func (p *PortParseError) Unwrap() error { return p.Cause }
 
 func (p *PortParseError) Error() string {
-	if e, ok := p.Err.(errors.Msg); ok {
-		return fmt.Sprintf("`%s`: %s", p.Text, e.Error())
+	// use an explicit type check because the error might be wrapped
+	//goland:noinspection GoTypeAssertionOnErrors
+	if e, ok := p.Cause.(errors.Msg); ok {
+		return fmt.Sprintf("`%s`: %s", p.Input, e.Error())
 	}
-	return p.Err.Error()
+	return p.Cause.Error()
 }
 
 var (
-	_ Option                   = new(Port)
-	_ encoding.TextMarshaler   = new(Port)
-	_ encoding.TextUnmarshaler = new(Port)
+	_ Option                   = (*Port)(nil)
+	_ encoding.TextMarshaler   = (*Port)(nil)
+	_ encoding.TextUnmarshaler = (*Port)(nil)
+	_ flag.Value               = (*Port)(nil)
 )
 
 type Port uint16
 
 func ParsePort(s string) (Port, error) {
 	if s == "" {
-		return 0, errors.WithStack(&PortParseError{
-			Err:  ErrMissingPort,
-			Text: s,
-		})
+		return 0, nil
 	}
 
 	if i := strings.IndexRune(s, ':'); i == 0 {
 		s = s[1:]
 	} else if i > 0 {
 		return 0, errors.WithStack(&PortParseError{
-			Err:  ErrInvalidFormat,
-			Text: s,
+			Cause: ErrInvalidFormat,
+			Input: s,
 		})
 	}
 
 	x, err := strconv.ParseUint(s, 0, 16)
 	if err != nil {
 		return 0, errors.WithStack(&PortParseError{
-			Err:  ErrMissingPort,
-			Text: s,
+			Cause: ErrMissingPort,
+			Input: s,
 		})
 	}
 	return Port(x), nil
@@ -73,13 +76,12 @@ func ParsePort(s string) (Port, error) {
 func SplitHostPort(hostport string) (string, Port, error) {
 	host, port, err := net.SplitHostPort(hostport)
 	if err != nil {
-		if addrErr, ok := err.(*net.AddrError); ok &&
-			addrErr.Err == "missing port in address" {
+		if isMissingPort(err) {
 			err = ErrMissingPort
 		}
 		return "", 0, errors.WithStack(&PortParseError{
-			Err:  err,
-			Text: hostport,
+			Cause: err,
+			Input: hostport,
 		})
 	}
 
@@ -92,6 +94,11 @@ func SplitHostPort(hostport string) (string, Port, error) {
 // literal IPv6 addresses, then JoinHostPort returns "[host]:port".
 func JoinHostPort(host string, port Port) string {
 	return net.JoinHostPort(host, port.String())
+}
+
+func (p *Port) Set(s string) (err error) {
+	*p, err = ParsePort(s)
+	return err
 }
 
 func (p *Port) UnmarshalText(text []byte) (err error) {
@@ -136,4 +143,9 @@ func (p Port) applyTo(s *Server) error {
 
 	s.server.Addr = host + p.Addr()
 	return nil
+}
+
+func isMissingPort(err error) bool {
+	var addrErr net.AddrError
+	return errors.As(err, &addrErr) && addrErr.Err == "missing port in address"
 }
