@@ -22,7 +22,10 @@ type RoutesRegistererFunc func(r RouteHandler)
 
 func (fn RoutesRegistererFunc) RegisterRoutes(r RouteHandler) { fn(r) }
 
-var _ RouteHandler = (*ServeMux)(nil)
+var (
+	_ RouteHandler = (*ServeMux)(nil)
+	_ Option       = (*ServeMux)(nil)
+)
 
 type serveMux = http.ServeMux
 
@@ -39,4 +42,9 @@ func (mux *ServeMux) Handle(method, pattern string, handler http.Handler) {
 
 func (mux *ServeMux) HandleFunc(method, pattern string, handler http.HandlerFunc) {
 	mux.handleFunc(method, pattern, handler)
+}
+
+func (mux *ServeMux) apply(s *Server) error {
+	s.Handler = mux
+	return nil
 }
