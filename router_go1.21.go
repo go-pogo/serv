@@ -8,10 +8,10 @@ package serv
 
 import "net/http"
 
-func (r *ServeMux) handle(_, pattern string, handler http.Handler) {
-	r.serveMux.Handle(pattern, handler)
+func (mux *ServeMux) handle(_, pattern string, handler http.Handler) {
+	mux.serveMux.Handle(pattern, handler)
 }
 
-func (r *ServeMux) handleFunc(_, pattern string, handler http.HandlerFunc) {
-	r.serveMux.HandleFunc(pattern, handler)
+func (mux *ServeMux) handleFunc(_, pattern string, handler http.HandlerFunc) {
+	mux.serveMux.HandleFunc(pattern, handler)
 }
