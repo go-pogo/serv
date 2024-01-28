@@ -144,6 +144,6 @@ func (p Port) apply(s *Server) error {
 }
 
 func isMissingPort(err error) bool {
-	var addrErr net.AddrError
+	var addrErr *net.AddrError
 	return errors.As(err, &addrErr) && addrErr.Err == "missing port in address"
 }
