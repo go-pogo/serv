@@ -6,16 +6,15 @@ package serv
 
 import (
 	"log"
-	"strings"
 )
-
-const panicNilLogger = "serv.WithLogger: Logger should not be nil"
 
 type Logger interface {
 	ServerStart(name, addr string)
 	ServerShutdown(name string)
 	ServerClose(name string)
 }
+
+const panicNilLogger = "serv.WithLogger: Logger should not be nil"
 
 func WithLogger(l Logger) Option {
 	if l == nil {
@@ -27,21 +26,32 @@ func WithLogger(l Logger) Option {
 	})
 }
 
+func WithDefaultLogger() Option {
+	return WithLogger(&DefaultLogger{log.Default()})
+}
+
 type DefaultLogger struct {
-	Logger *log.Logger
+	*log.Logger
 }
 
 func (l *DefaultLogger) log(v ...string) {
 	if l.Logger == nil {
-		log.Println(strings.Join(v, " "))
-	} else {
-		l.Logger.Println(strings.Join(v, " "))
+		l.Logger = log.Default()
 	}
+	l.Logger.Println(v)
 }
 
-func (l *DefaultLogger) ServerStart(name, addr string) { l.log("server", name, "starting on", addr) }
-func (l *DefaultLogger) ServerShutdown(name string)    { l.log("server", name, "shutting down") }
-func (l *DefaultLogger) ServerClose(name string)       { l.log("server", name, "closing") }
+func (l *DefaultLogger) ServerStart(name, addr string) {
+	l.log("server", name, "starting on", addr)
+}
+
+func (l *DefaultLogger) ServerShutdown(name string) {
+	l.log("server", name, "shutting down")
+}
+
+func (l *DefaultLogger) ServerClose(name string) {
+	l.log("server", name, "closing")
+}
 
 func NopLogger() Logger { return new(nopLogger) }
 

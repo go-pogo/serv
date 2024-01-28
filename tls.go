@@ -13,8 +13,8 @@ import (
 // DefaultTLSConfig returns a modern preconfigured tls.Config.
 func DefaultTLSConfig() *tls.Config {
 	return &tls.Config{
-		PreferServerCipherSuites: true,
-		MinVersion:               tls.VersionTLS12,
+		//PreferServerCipherSuites: true,
+		MinVersion: tls.VersionTLS12,
 
 		CurvePreferences: []tls.CurveID{
 			tls.CurveP256,
@@ -52,14 +52,14 @@ func WithTLS(conf *tls.Config, opts ...TLSOption) Option {
 	})
 }
 
-var _ TLSOption = &TLSConfig{}
+var _ TLSOption = (*TLSConfig)(nil)
 
 type TLSConfig struct {
 	CaCertFile string `env:"TLS_CA_FILE" flag:"tlscacert"`
 	CertFile   string `env:"TLS_CERT_FILE" flag:"tlscert"`
 	KeyFile    string `env:"TLS_KEY_FILE" flag:"tlskey"`
 
-	// InsecureSkipVerify should be used only for testing
+	// InsecureSkipVerify should only be used for testing
 	InsecureSkipVerify bool `env:"INSECURE_SKIP_VERIFY"`
 }
 
@@ -90,8 +90,10 @@ type CertificateLoader interface {
 	LoadCertificate() (*tls.Certificate, error)
 }
 
-var _ CertificateLoader = &TLSKeyPair{}
-var _ TLSOption = &TLSKeyPair{}
+var (
+	_ CertificateLoader = (*TLSKeyPair)(nil)
+	_ TLSOption         = (*TLSKeyPair)(nil)
+)
 
 // TLSKeyPair contains the paths to a public/private key pair of files.
 type TLSKeyPair struct {
@@ -120,8 +122,10 @@ func (kp TLSKeyPair) Apply(conf *tls.Config) error {
 	return nil
 }
 
-var _ CertificateLoader = &TLSPemBlocks{}
-var _ TLSOption = &TLSPemBlocks{}
+var (
+	_ CertificateLoader = (*TLSPemBlocks)(nil)
+	_ TLSOption         = (*TLSPemBlocks)(nil)
+)
 
 // certPEMBlock, keyPEMBlock
 type TLSPemBlocks struct {

@@ -124,24 +124,22 @@ func (p Port) Addr() string {
 	return ":" + strconv.FormatUint(uint64(p), 10)
 }
 
-func (p Port) applyTo(s *Server) error {
-	if s.server.Addr == "" {
-		s.server.Addr = p.Addr()
+func (p Port) apply(s *Server) error {
+	if s.Addr == "" {
+		s.Addr = p.Addr()
 		return nil
 	}
-	if !strings.ContainsRune(s.server.Addr, ':') {
-		s.server.Addr += p.Addr()
+	if !strings.ContainsRune(s.Addr, ':') {
+		s.Addr += p.Addr()
 		return nil
 	}
 
-	host, _, err := net.SplitHostPort(s.server.Addr)
-
-	var addrErr net.AddrError
-	if errors.As(err, &addrErr) && addrErr.Err == "missing port in address" {
-		host = s.server.Addr
+	host, _, err := net.SplitHostPort(s.Addr)
+	if err != nil && isMissingPort(err) {
+		host = s.Addr
 	}
 
-	s.server.Addr = host + p.Addr()
+	s.Addr = host + p.Addr()
 	return nil
 }
 

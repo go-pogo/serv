@@ -7,15 +7,16 @@ package serv
 import (
 	"context"
 	"github.com/go-pogo/serv/middleware"
+	"net/http"
 )
 
 type Option interface {
-	applyTo(s *Server) error
+	apply(s *Server) error
 }
 
 type optionFunc func(s *Server) error
 
-func (fn optionFunc) applyTo(s *Server) error { return fn(s) }
+func (fn optionFunc) apply(s *Server) error { return fn(s) }
 
 // WithOptions wraps multiple Option(s) into a single Option.
 func WithOptions(opts ...Option) Option {
@@ -26,19 +27,26 @@ func WithOptions(opts ...Option) Option {
 		return opts[0]
 	default:
 		return optionFunc(func(srv *Server) error {
-			return srv.apply(opts)
+			return srv.Apply(opts...)
 		})
 	}
+}
+
+func WithHandler(h http.Handler) Option {
+	return optionFunc(func(s *Server) error {
+		s.Handler = h
+		return nil
+	})
 }
 
 // WithMiddleware adds the middleware.Middleware to an internal list. When the
 // Server is started, it's Handler is wrapped with this middleware.
 func WithMiddleware(mw ...middleware.Middleware) Option {
 	return optionFunc(func(s *Server) error {
-		if s.mware == nil {
-			s.mware = mw
+		if s.middlewares == nil {
+			s.middlewares = mw
 		} else {
-			s.mware = append(s.mware, mw...)
+			s.middlewares = append(s.middlewares, mw...)
 		}
 		return nil
 	})
@@ -50,10 +58,9 @@ type serverNameKey struct{}
 func WithName(name string) Option {
 	return optionFunc(func(s *Server) error {
 		s.name = name
-		return WithMiddleware(middleware.WithContextValue(
-			serverNameKey{},
-			name,
-		)).applyTo(s)
+		return WithMiddleware(
+			middleware.WithContextValue(serverNameKey{}, name),
+		).apply(s)
 	})
 }
 
