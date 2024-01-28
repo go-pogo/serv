@@ -48,7 +48,10 @@ type Port uint16
 
 func ParsePort(s string) (Port, error) {
 	if s == "" {
-		return 0, nil
+		return 0, errors.WithStack(&PortParseError{
+			Cause: ErrMissingPort,
+			Input: s,
+		})
 	}
 
 	if i := strings.IndexRune(s, ':'); i == 0 {
@@ -97,11 +100,19 @@ func JoinHostPort(host string, port Port) string {
 }
 
 func (p *Port) Set(s string) (err error) {
+	if s == "" {
+		return nil
+	}
+
 	*p, err = ParsePort(s)
 	return err
 }
 
 func (p *Port) UnmarshalText(text []byte) (err error) {
+	if len(text) == 0 {
+		return nil
+	}
+
 	*p, err = ParsePort(string(text))
 	return err
 }
