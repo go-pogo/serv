@@ -15,7 +15,7 @@ type handlerNameKey struct{}
 // WithHandlerName adds name as value to the request's context. It should be
 // used on a per route/handler basis.
 func WithHandlerName(name string, next http.Handler) http.Handler {
-	return middleware.WithContextValue(handlerNameKey{}, name).Wrap(next.ServeHTTP)
+	return middleware.WithContextValue(handlerNameKey{}, &name).Wrap(next.ServeHTTP)
 }
 
 // SetHandlerName adds name as the value for handler name to the context.
