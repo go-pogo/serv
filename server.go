@@ -22,16 +22,20 @@ const (
 
 type httpServer = http.Server
 
-// Server is a wrapper for a standard http.Server.
+// Server is a wrapper for http.Server.
 // The zero value is safe and ready to use, and will apply safe defaults on
 // starting the server.
 type Server struct {
-	Config
+	httpServer
 
-	Addr    string
+	Config *Config
+	// Addr optionally specifies the TCP address for the server to listen on.
+	// See net.Dial for details of the address format.
+	// See http.Server for additional information.
+	Addr string
+	// Handler to invoke, http.DefaultServeMux if nil
 	Handler http.Handler
 
-	httpServer
 	log         Logger
 	middlewares []middleware.Middleware
 	name        string
@@ -49,7 +53,13 @@ func New(opts ...Option) (*Server, error) {
 
 // NewDefault creates a new Server with DefaultConfig applied to it.
 func NewDefault(opts ...Option) (*Server, error) {
-	return New(DefaultConfig(), WithOptions(opts...))
+	srv := Server{Config: new(Config)}
+	srv.Config.Default()
+
+	if err := srv.Apply(opts...); err != nil {
+		return nil, err
+	}
+	return &srv, nil
 }
 
 func (srv *Server) Apply(opts ...Option) error {
@@ -84,8 +94,10 @@ func (srv *Server) start() error {
 		handler = middleware.Wrap(handler, srv.middlewares...)
 		srv.middlewares = nil
 	}
+	if srv.Config != nil {
+		srv.Config.ApplyTo(&srv.httpServer)
+	}
 
-	srv.Config.ApplyTo(&srv.httpServer)
 	srv.httpServer.Addr = srv.Addr
 	srv.httpServer.Handler = handler
 
@@ -183,11 +195,11 @@ func (srv *Server) Shutdown(ctx context.Context) error {
 	srv.log.ServerShutdown(srv.name)
 	srv.httpServer.SetKeepAlivesEnabled(false)
 
-	if srv.ShutdownTimeout != 0 {
-		if t, ok := ctx.Deadline(); !ok || srv.ShutdownTimeout < time.Until(t) {
+	if srv.Config != nil && srv.Config.ShutdownTimeout != 0 {
+		if t, ok := ctx.Deadline(); !ok || srv.Config.ShutdownTimeout < time.Until(t) {
 			// shutdown timeout is set to a lower value, update context
 			var cancelFn context.CancelFunc
-			ctx, cancelFn = context.WithTimeout(ctx, srv.ShutdownTimeout)
+			ctx, cancelFn = context.WithTimeout(ctx, srv.Config.ShutdownTimeout)
 			defer cancelFn()
 		}
 	}

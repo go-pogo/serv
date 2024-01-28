@@ -7,10 +7,10 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"github.com/go-pogo/errors"
 	"github.com/go-pogo/serv"
 	"github.com/go-pogo/serv/accesslog"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -33,16 +33,16 @@ func main() {
 	handler := http.FileServer(http.Dir(dir))
 	handler = http.TimeoutHandler(handler, time.Second, "")
 
-	router := http.NewServeMux()
-	router.Handle("/", accesslog.WithHandlerName("files", handler))
+	mux := http.NewServeMux()
+	mux.Handle("/", accesslog.WithHandlerName("files", handler))
 
-	server, err := serv.NewDefault(
-		router,
+	srv, err := serv.NewDefault(
 		port,
+		serv.WithHandler(mux),
 		serv.WithName("serv"),
-		serv.WithLogger(new(serv.DefaultLogger)),
+		serv.WithDefaultLogger(),
 		serv.WithMiddleware(
-			accesslog.Middleware(new(accesslog.DefaultLogger)),
+			accesslog.Middleware(accesslog.DefaultLogger(nil)),
 		),
 	)
 	errors.FatalOnErr(err)
@@ -50,21 +50,26 @@ func main() {
 	ctx, quitFn := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer quitFn()
 
+	errCh := make(chan error)
+	defer close(errCh)
+
 	go func() {
-		server.BaseContext = serv.BaseContext(ctx)
-		err := server.ListenAndServe()
-		if !errors.Is(err, http.ErrServerClosed) {
-			_, _ = fmt.Fprintf(os.Stderr, "\nServer error: %+v\n", err)
+		if err := srv.Run(); err != nil {
+			errCh <- err
 		}
 	}()
 
-	<-ctx.Done()
+	select {
+	case <-ctx.Done():
+	case err := <-errCh:
+		log.Println("Server error:", err.Error())
+	}
 
-	if err = server.Shutdown(context.Background()); err != nil {
+	if err = srv.Shutdown(context.Background()); err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
-			_, _ = fmt.Fprintf(os.Stderr, "\nShutdown error: %+v\n", err)
-		} else if err = server.Close(); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "\nClose error: %+v\n", err)
+			log.Printf("Shutdown error: %+v\n", err)
+		} else if err = srv.Close(); err != nil {
+			log.Printf("Close error: %+v\n", err)
 		}
 	}
 }

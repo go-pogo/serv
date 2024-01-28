@@ -7,6 +7,7 @@ package serv
 import (
 	"context"
 	"github.com/go-pogo/serv/middleware"
+	"net"
 	"net/http"
 )
 
@@ -70,4 +71,16 @@ func ServerName(ctx context.Context) string {
 		return v.(string)
 	}
 	return ""
+}
+
+// BaseContext returns a function which returns the provided context.Context.
+func BaseContext(ctx context.Context) func(_ net.Listener) context.Context {
+	return func(_ net.Listener) context.Context { return ctx }
+}
+
+func WithBaseContext(ctx context.Context) Option {
+	return optionFunc(func(s *Server) error {
+		s.httpServer.BaseContext = BaseContext(ctx)
+		return nil
+	})
 }
