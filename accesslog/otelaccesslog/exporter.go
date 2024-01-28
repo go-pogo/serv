@@ -9,7 +9,7 @@ import (
 	"github.com/go-pogo/serv/accesslog"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	"go.opentelemetry.io/otel/trace"
 	"net/http"
 	"net/url"
@@ -23,9 +23,9 @@ type exporter struct {
 // otel provider, sends accesslog.Details derived from
 // trace.SpanKindServer spans, to the provided accesslog.Logger.
 //
-//	var logger accesslog.DefaultLogger
+//	logger := accesslog.DefaultLogger(nil)
 //	tracer := tracesdk.NewTraceProvider(
-//		tracesdk.WithBatcher(otelaccesslog.NewExporter(&logger)),
+//		tracesdk.WithBatcher(otelaccesslog.NewExporter(logger)),
 //	)
 func NewExporter(log accesslog.Logger) tracesdk.SpanExporter {
 	return &exporter{
@@ -52,31 +52,33 @@ func (exp *exporter) ExportSpans(ctx context.Context, spans []tracesdk.ReadOnlyS
 			switch attr.Key {
 			case semconv.CodeFunctionKey:
 				det.HandlerName = attr.Value.AsString()
-			case semconv.HTTPMethodKey:
+			case semconv.UserAgentOriginalKey, semconv.HTTPUserAgentKey:
+				det.UserAgent = attr.Value.AsString()
+			case semconv.HTTPRequestMethodKey, semconv.HTTPMethodKey:
 				req.Method = attr.Value.AsString()
-			case semconv.HTTPTargetKey:
+			case semconv.URLPathKey, semconv.HTTPTargetKey:
 				req.URL.Path = attr.Value.AsString()
-			case semconv.HTTPSchemeKey:
+			case semconv.URLSchemeKey, semconv.HTTPSchemeKey:
 				req.URL.Scheme = attr.Value.AsString()
-			case semconv.HTTPFlavorKey:
+			case semconv.NetworkProtocolNameKey:
 				req.Proto = "HTTP/" + attr.Value.AsString()
-			case semconv.NetPeerIPKey, "net.sock.peer.addr":
+			case semconv.NetworkPeerAddressKey, semconv.NetSockPeerAddrKey:
 				if req.RemoteAddr == "" {
 					req.RemoteAddr = attr.Value.AsString()
 				} else {
 					req.RemoteAddr = attr.Value.AsString() + ":" + req.RemoteAddr
 				}
-			case semconv.NetPeerPortKey, "net.sock.peer.port":
+			case semconv.ServerPortKey, semconv.NetHostPortKey:
 				if req.RemoteAddr == "" {
 					req.RemoteAddr = attr.Value.AsString()
 				} else {
 					req.RemoteAddr += ":" + attr.Value.AsString()
 				}
-			case semconv.HTTPStatusCodeKey:
+			case semconv.HTTPResponseStatusCodeKey, semconv.HTTPStatusCodeKey:
 				det.StatusCode = int(attr.Value.AsInt64())
 			case otelhttp.WroteBytesKey:
 				det.BytesWritten = attr.Value.AsInt64()
-			case otelhttp.RequestCount:
+			case otelhttp.RequestCount: // todo: does not seem to work
 				det.RequestCount = attr.Value.AsInt64()
 			}
 		}

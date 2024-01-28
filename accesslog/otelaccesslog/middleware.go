@@ -8,7 +8,7 @@ import (
 	"context"
 	"github.com/go-pogo/serv/accesslog"
 	"github.com/go-pogo/serv/middleware"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	"go.opentelemetry.io/otel/trace"
 	"net/http"
 )
@@ -19,9 +19,12 @@ import (
 // Wrap has the same method signature as accesslog.Wrap for ease of use.
 func Wrap(_ accesslog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
-		trace.SpanFromContext(req.Context()).
-			SetAttributes(semconv.HTTPTargetKey.String(accesslog.RequestURI(req)))
-
+		trace.SpanFromContext(req.Context()).SetAttributes(
+			semconv.URLPath(req.URL.Path),
+			semconv.URLQuery(req.URL.RawQuery),
+			// keep to stay backwards compatible with otelhttp
+			semconv.HTTPTargetKey.String(req.RequestURI),
+		)
 		next.ServeHTTP(wri, req)
 	})
 }
