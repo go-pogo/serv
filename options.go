@@ -6,6 +6,8 @@ package serv
 
 import (
 	"context"
+	"crypto/tls"
+	"github.com/go-pogo/errors"
 	"github.com/go-pogo/serv/middleware"
 	"net"
 	"net/http"
@@ -82,5 +84,25 @@ func WithBaseContext(ctx context.Context) Option {
 	return optionFunc(func(s *Server) error {
 		s.httpServer.BaseContext = BaseContext(ctx)
 		return nil
+	})
+}
+
+type TLSOption interface {
+	Apply(conf *tls.Config) error
+}
+
+func WithTLS(conf *tls.Config, opts ...TLSOption) Option {
+	return optionFunc(func(s *Server) error {
+		if conf == nil {
+			s.TLSConfig = DefaultTLSConfig()
+		} else {
+			s.TLSConfig = conf
+		}
+
+		var err error
+		for _, opt := range opts {
+			errors.AppendInto(&err, opt.Apply(conf))
+		}
+		return err
 	})
 }

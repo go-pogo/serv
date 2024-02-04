@@ -65,7 +65,7 @@ func NewDefault(opts ...Option) (*Server, error) {
 func (srv *Server) Apply(opts ...Option) error {
 	var err error
 	for _, opt := range opts {
-		errors.Append(&err, opt.apply(srv))
+		errors.AppendInto(&err, opt.apply(srv))
 	}
 	return err
 }

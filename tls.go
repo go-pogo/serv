@@ -32,26 +32,6 @@ func DefaultTLSConfig() *tls.Config {
 	}
 }
 
-type TLSOption interface {
-	Apply(conf *tls.Config) error
-}
-
-func WithTLS(conf *tls.Config, opts ...TLSOption) Option {
-	return optionFunc(func(s *Server) error {
-		if conf == nil {
-			s.TLSConfig = DefaultTLSConfig()
-		} else {
-			s.TLSConfig = conf
-		}
-
-		var err error
-		for _, opt := range opts {
-			errors.Append(&err, opt.Apply(conf))
-		}
-		return err
-	})
-}
-
 var _ TLSOption = (*TLSConfig)(nil)
 
 type TLSConfig struct {
