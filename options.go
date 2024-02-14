@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/tls"
 	"github.com/go-pogo/errors"
+	"github.com/go-pogo/serv/internal"
 	"github.com/go-pogo/serv/middleware"
 	"net"
 	"net/http"
@@ -42,6 +43,27 @@ func WithHandler(h http.Handler) Option {
 	})
 }
 
+const ErrHandlerIsNoRouteHandler errors.Msg = "server handler is not a RouteHandler"
+
+func WithRoutes(reg ...RoutesRegisterer) Option {
+	return optionFunc(func(s *Server) error {
+		if s.Handler == nil {
+			mux := NewServeMux()
+			for _, rr := range reg {
+				rr.RegisterRoutes(mux)
+			}
+			s.Handler = mux
+			return nil
+		}
+		if r, ok := s.Handler.(RouteHandler); ok {
+			for _, rr := range reg {
+				rr.RegisterRoutes(r)
+			}
+		}
+		return errors.New(ErrHandlerIsNoRouteHandler)
+	})
+}
+
 // WithMiddleware adds the middleware.Middleware to an internal list. When the
 // Server is started, it's Handler is wrapped with this middleware.
 func WithMiddleware(mw ...middleware.Middleware) Option {
@@ -55,27 +77,19 @@ func WithMiddleware(mw ...middleware.Middleware) Option {
 	})
 }
 
-type serverNameKey struct{}
-
 // WithName adds the server's name as value to the request's context.
 func WithName(name string) Option {
 	return optionFunc(func(s *Server) error {
 		s.name = name
-		return WithMiddleware(
-			middleware.WithContextValue(serverNameKey{}, name),
-		).apply(s)
+		return WithMiddleware(internal.ServerNameMiddleware(name)).apply(s)
 	})
 }
 
-// ServerName gets the name from the context values which may be an empty string.
-func ServerName(ctx context.Context) string {
-	if v := ctx.Value(serverNameKey{}); v != nil {
-		return v.(string)
-	}
-	return ""
-}
+// ServerName gets the server's name from context values. Its return value may
+// be an empty string.
+func ServerName(ctx context.Context) string { return internal.ServerName(ctx) }
 
-// BaseContext returns a function which returns the provided context.Context.
+// BaseContext returns a function which returns the provided context.
 func BaseContext(ctx context.Context) func(_ net.Listener) context.Context {
 	return func(_ net.Listener) context.Context { return ctx }
 }
@@ -101,7 +115,7 @@ func WithTLS(conf *tls.Config, opts ...TLSOption) Option {
 
 		var err error
 		for _, opt := range opts {
-			errors.AppendInto(&err, opt.Apply(conf))
+			err = errors.Append(err, opt.Apply(conf))
 		}
 		return err
 	})

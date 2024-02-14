@@ -7,7 +7,7 @@ package accesslog
 import (
 	"context"
 	"github.com/felixge/httpsnoop"
-	"github.com/go-pogo/serv"
+	"github.com/go-pogo/serv/internal"
 	"github.com/go-pogo/serv/middleware"
 	"net/http"
 	"sync/atomic"
@@ -53,14 +53,14 @@ func (c *handler) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 	det.StatusCode = met.Code
 	det.Duration = met.Duration
 	det.BytesWritten = met.Written
-	det.ServerName = serv.ServerName(ctx)
+	det.ServerName = internal.ServerName(ctx)
 	det.HandlerName = HandlerName(ctx)
 	det.UserAgent = req.UserAgent()
 
 	c.log.Log(ctx, det, req.Clone(&noopCtx{ctx}))
 }
 
-var _ context.Context = new(noopCtx)
+var _ context.Context = (*noopCtx)(nil)
 
 // An noopCtx is similar to context.Background as it is never canceled and has
 // no deadline. However, it does return values from its parent context, when
