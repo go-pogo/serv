@@ -6,12 +6,6 @@
 
 package serv
 
-import "net/http"
-
-func (mux *ServeMux) handle(_, pattern string, handler http.Handler) {
-	mux.serveMux.Handle(pattern, handler)
-}
-
-func (mux *ServeMux) handleFunc(_, pattern string, handler http.HandlerFunc) {
-	mux.serveMux.HandleFunc(pattern, handler)
+func (mux *ServeMux) handle(route Route) {
+	mux.serveMux.Handle(route.Pattern, route.Handler)
 }

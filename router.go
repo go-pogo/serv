@@ -4,12 +4,15 @@
 
 package serv
 
-import "net/http"
+import (
+	"github.com/go-pogo/serv/accesslog"
+	"github.com/go-pogo/serv/accesslog/otelaccesslog"
+	"net/http"
+)
 
 // RouteHandler handles routes.
 type RouteHandler interface {
-	Handle(method, pattern string, handler http.Handler)
-	HandleFunc(method, pattern string, handler http.HandlerFunc)
+	HandleRoute(route Route)
 }
 
 // RoutesRegisterer registers routes to a RouteHandler.
@@ -22,27 +25,52 @@ type RoutesRegistererFunc func(r RouteHandler)
 
 func (fn RoutesRegistererFunc) RegisterRoutes(r RouteHandler) { fn(r) }
 
+var _ http.Handler = (*Route)(nil)
+
+type Route struct {
+	// Name of the route.
+	Name string
+	// Method used to handle the route.
+	Method string
+	// Pattern to access the route.
+	Pattern string
+	// Handler is the http.Handler that handles the route.
+	Handler http.Handler
+}
+
+func (r Route) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
+	if r.Name == "" {
+		r.Handler.ServeHTTP(wri, req)
+		return
+	}
+
+	ctx := req.Context()
+	ctx = accesslog.SetHandlerName(ctx, r.Name)
+	otelaccesslog.SetHandlerName(ctx, r.Name)
+	r.Handler.ServeHTTP(wri, req.WithContext(ctx))
+}
+
+// Router is a http.Handler that can handle routes.
+type Router interface {
+	RouteHandler
+	http.Handler
+}
+
 var (
-	_ RouteHandler = (*ServeMux)(nil)
-	_ Option       = (*ServeMux)(nil)
+	_ Router = (*ServeMux)(nil)
+	_ Option = (*ServeMux)(nil)
 )
 
 type serveMux = http.ServeMux
 
-// ServeMux is a http.ServeMux wrapper which implements the RouteHandler
-// interface. See http.ServeMux for more information.
+// ServeMux is a http.ServeMux wrapper which implements the Router interface.
+// See http.ServeMux for more information.
 type ServeMux struct{ serveMux }
 
 // NewServeMux creates a new ServeMux and is ready to be used.
 func NewServeMux() *ServeMux { return new(ServeMux) }
 
-func (mux *ServeMux) Handle(method, pattern string, handler http.Handler) {
-	mux.handle(method, pattern, handler)
-}
-
-func (mux *ServeMux) HandleFunc(method, pattern string, handler http.HandlerFunc) {
-	mux.handleFunc(method, pattern, handler)
-}
+func (mux *ServeMux) HandleRoute(route Route) { mux.handle(route) }
 
 func (mux *ServeMux) apply(s *Server) error {
 	s.Handler = mux
