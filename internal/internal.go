@@ -7,7 +7,7 @@ import (
 
 type serverNameKey struct{}
 
-func ServerNameMiddleware(name string) middleware.Middleware {
+func ServerNameMiddleware(name string) middleware.Wrapper {
 	return middleware.WithContextValue(serverNameKey{}, name)
 }
 

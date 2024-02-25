@@ -33,8 +33,8 @@ func Wrap(log Logger, next http.Handler) http.Handler {
 }
 
 // Middleware returns Wrap as middleware.Middleware.
-func Middleware(log Logger) middleware.Middleware {
-	return middleware.MiddlewareFunc(func(next http.HandlerFunc) http.Handler {
+func Middleware(log Logger) middleware.Wrapper {
+	return middleware.WrapperFunc(func(next http.HandlerFunc) http.Handler {
 		return Wrap(log, next)
 	})
 }

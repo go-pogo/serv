@@ -31,8 +31,8 @@ func Wrap(_ accesslog.Logger, next http.Handler) http.Handler {
 
 // Middleware returns Wrap as middleware.Middleware.
 // It has the same method signature as accesslog.Middleware for ease of use.
-func Middleware(_ accesslog.Logger) middleware.Middleware {
-	return middleware.MiddlewareFunc(func(next http.HandlerFunc) http.Handler {
+func Middleware(_ accesslog.Logger) middleware.Wrapper {
+	return middleware.WrapperFunc(func(next http.HandlerFunc) http.Handler {
 		return Wrap(nil, next)
 	})
 }

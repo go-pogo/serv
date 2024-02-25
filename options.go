@@ -66,12 +66,12 @@ func WithRoutes(reg ...RoutesRegisterer) Option {
 
 // WithMiddleware adds the middleware.Middleware to an internal list. When the
 // Server is started, it's Handler is wrapped with this middleware.
-func WithMiddleware(mw ...middleware.Middleware) Option {
+func WithMiddleware(mw ...middleware.Wrapper) Option {
 	return optionFunc(func(s *Server) error {
-		if s.middlewares == nil {
-			s.middlewares = mw
+		if s.middleware == nil {
+			s.middleware = mw
 		} else {
-			s.middlewares = append(s.middlewares, mw...)
+			s.middleware = append(s.middleware, mw...)
 		}
 		return nil
 	})

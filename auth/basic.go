@@ -19,7 +19,7 @@ func Basic(user, pass string, next http.Handler) http.Handler {
 	return NewBasicMiddleware(user, pass).Wrap(next.ServeHTTP)
 }
 
-var _ middleware.Middleware = new(BasicMiddleware)
+var _ middleware.Wrapper = (*BasicMiddleware)(nil)
 
 type BasicMiddleware struct {
 	user, pass [sha256.Size]byte

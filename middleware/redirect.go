@@ -13,8 +13,8 @@ import (
 // equivalent url.
 // It uses the redirect code http.StatusMovedPermanently for any GET request
 // and http.StatusTemporaryRedirect for any other method.
-func RedirectHttps() Middleware {
-	return MiddlewareFunc(func(next http.HandlerFunc) http.Handler {
+func RedirectHttps() Wrapper {
+	return WrapperFunc(func(next http.HandlerFunc) http.Handler {
 		return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
 			if req.URL.Scheme == "http" {
 				req.URL.Scheme += "s"
@@ -30,8 +30,8 @@ func RedirectHttps() Middleware {
 // trailing slash to the equivalent path without trailing slash.
 // It uses the redirect code http.StatusMovedPermanently for any GET request
 // and http.StatusTemporaryRedirect for any other method.
-func RemoveTrailingSlash() Middleware {
-	return MiddlewareFunc(func(next http.HandlerFunc) http.Handler {
+func RemoveTrailingSlash() Wrapper {
+	return WrapperFunc(func(next http.HandlerFunc) http.Handler {
 		return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
 			if req.URL.Path == "/" || strings.HasSuffix(req.URL.Path, "/") {
 				http.Redirect(wri, req, strings.TrimRight(req.URL.Path, "/"), statusCode(req.Method))

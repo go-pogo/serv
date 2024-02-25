@@ -9,8 +9,8 @@ import (
 	"net/http"
 )
 
-func WithContextValue(key, value interface{}) Middleware {
-	return MiddlewareFunc(func(next http.HandlerFunc) http.Handler {
+func WithContextValue(key, value any) Wrapper {
+	return WrapperFunc(func(next http.HandlerFunc) http.Handler {
 		return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
 			next.ServeHTTP(
 				wri,
