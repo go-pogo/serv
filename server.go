@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	ErrServerStarted     errors.Msg = "server is already started"
-	ErrUnstartedShutdown errors.Msg = "shutting down unstarted server"
-	ErrUnstartedClose    errors.Msg = "closing unstarted server"
+	ErrAlreadyStarted    errors.Msg = "server is already started"
+	ErrUnstartedShutdown errors.Msg = "cannot shutdown server that is not started"
+	ErrUnstartedClose    errors.Msg = "cannot close server that is not started"
 )
 
 type httpServer = http.Server
@@ -36,10 +36,10 @@ type Server struct {
 	// Handler to invoke, http.DefaultServeMux if nil
 	Handler http.Handler
 
-	log         Logger
-	middlewares []middleware.Middleware
-	name        string
-	started     uint32
+	log        Logger
+	name       string
+	middleware middleware.Middleware
+	started    atomic.Bool
 }
 
 // New creates a new Server.
@@ -72,27 +72,26 @@ func (srv *Server) Apply(opts ...Option) error {
 
 func (srv *Server) Name() string { return srv.name }
 
-func (srv *Server) IsStarted() bool {
-	return atomic.LoadUint32(&srv.started) == 1
-}
+func (srv *Server) IsStarted() bool { return srv.started.Load() }
 
 func (srv *Server) start() error {
 	if srv.IsStarted() {
-		return errors.New(ErrServerStarted)
+		return errors.New(ErrAlreadyStarted)
 	}
 
+	srv.started.Store(true)
 	if srv.log == nil {
 		srv.log = NopLogger()
 	}
 
 	handler := srv.Handler
-	if len(srv.middlewares) != 0 {
+	if len(srv.middleware) != 0 {
 		if srv.Handler == nil {
 			handler = http.DefaultServeMux
 		}
 
-		handler = middleware.Wrap(handler, srv.middlewares...)
-		srv.middlewares = nil
+		handler = srv.middleware.Wrap(handler.ServeHTTP)
+		srv.middleware = nil
 	}
 	if srv.Config != nil {
 		srv.Config.ApplyTo(&srv.httpServer)
@@ -102,7 +101,6 @@ func (srv *Server) start() error {
 	srv.httpServer.Handler = handler
 
 	srv.log.ServerStart(srv.name, srv.Addr)
-	atomic.StoreUint32(&srv.started, 1)
 	return nil
 }
 
@@ -160,7 +158,7 @@ func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 
 func (srv *Server) Run() error {
 	if srv.IsStarted() {
-		return errors.New(ErrServerStarted)
+		return errors.New(ErrAlreadyStarted)
 	}
 
 	if srv.httpServer.TLSConfig != nil &&
