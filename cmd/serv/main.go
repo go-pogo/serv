@@ -18,12 +18,14 @@ import (
 	"time"
 )
 
-func main() {
-	cli := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	port := serv.Port(*cli.Uint("p", 8080, "server port"))
+// Serv serves a directory of files.
 
-	err := cli.Parse(os.Args[1:])
-	errors.FatalOnErr(err)
+func main() {
+	var port serv.Port = 80
+
+	cli := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	cli.Var(&port, "port", "server port")
+	_ = cli.Parse(os.Args[1:])
 
 	dir := cli.Arg(0)
 	if dir == "" {
@@ -33,13 +35,19 @@ func main() {
 	handler := http.FileServer(http.Dir(dir))
 	handler = http.TimeoutHandler(handler, time.Second, "")
 
-	mux := http.NewServeMux()
-	mux.Handle("/", accesslog.WithHandlerName("files", handler))
+	mux := serv.NewServeMux()
+	mux.HandleRoute(serv.Route{
+		Name:    "files",
+		Method:  http.MethodGet,
+		Pattern: "/",
+		Handler: handler,
+	})
 
+	ctx, stopFn := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	srv, err := serv.NewDefault(
-		port,
-		serv.WithHandler(mux),
+		port, mux,
 		serv.WithName("serv"),
+		serv.WithBaseContext(ctx),
 		serv.WithDefaultLogger(),
 		serv.WithMiddleware(
 			accesslog.Middleware(accesslog.DefaultLogger(nil)),
@@ -47,23 +55,13 @@ func main() {
 	)
 	errors.FatalOnErr(err)
 
-	ctx, quitFn := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer quitFn()
-
-	errCh := make(chan error)
-	defer close(errCh)
-
 	go func() {
+		defer stopFn()
 		if err := srv.Run(); err != nil {
-			errCh <- err
+			log.Println("Server error:", err.Error())
 		}
 	}()
-
-	select {
-	case <-ctx.Done():
-	case err := <-errCh:
-		log.Println("Server error:", err.Error())
-	}
+	<-ctx.Done()
 
 	if err = srv.Shutdown(context.Background()); err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
