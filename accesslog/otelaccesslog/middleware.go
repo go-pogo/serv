@@ -47,6 +47,7 @@ func WithHandlerName(name string, next http.Handler) http.Handler {
 }
 
 func SetHandlerName(ctx context.Context, name string) {
-	trace.SpanFromContext(ctx).
-		SetAttributes(semconv.CodeFunctionKey.String(name))
+	if span := trace.SpanFromContext(ctx); span.IsRecording() {
+		span.SetAttributes(semconv.CodeFunctionKey.String(name))
+	}
 }

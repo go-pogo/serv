@@ -44,10 +44,6 @@ func (exp *exporter) ExportSpans(ctx context.Context, spans []tracesdk.ReadOnlyS
 		var det accesslog.Details
 		req := &http.Request{URL: &url.URL{}}
 
-		det.ServerName = span.Name()
-		det.StartTime = span.StartTime()
-		det.Duration = span.EndTime().Sub(span.StartTime())
-
 		for _, attr := range span.Attributes() {
 			switch attr.Key {
 			case semconv.CodeFunctionKey:
@@ -78,10 +74,12 @@ func (exp *exporter) ExportSpans(ctx context.Context, spans []tracesdk.ReadOnlyS
 				det.StatusCode = int(attr.Value.AsInt64())
 			case otelhttp.WroteBytesKey:
 				det.BytesWritten = attr.Value.AsInt64()
-			case otelhttp.RequestCount: // todo: does not seem to work
-				det.RequestCount = attr.Value.AsInt64()
 			}
 		}
+
+		det.ServerName = span.Name()
+		det.StartTime = span.StartTime()
+		det.Duration = span.EndTime().Sub(span.StartTime())
 
 		exp.log.Log(ctx, det, req)
 	}
