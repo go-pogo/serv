@@ -64,6 +64,7 @@ func (cfg *Config) Default() {
 		cfg.IdleTimeout = 120 * time.Second
 	}
 	if cfg.MaxHeaderBytes == 0 {
+		cfg.MaxHeaderBytes = 10240
 		//cfg.MaxHeaderBytes = 10 * data.Kibibyte
 	}
 	if cfg.ShutdownTimeout == 0 {
