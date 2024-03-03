@@ -6,7 +6,6 @@ package serv
 
 import (
 	"github.com/go-pogo/serv/accesslog"
-	"github.com/go-pogo/serv/accesslog/otelaccesslog"
 	"net/http"
 )
 
@@ -44,10 +43,7 @@ func (r Route) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ctx := req.Context()
-	ctx = accesslog.SetHandlerName(ctx, r.Name)
-	otelaccesslog.SetHandlerName(ctx, r.Name)
-	r.Handler.ServeHTTP(wri, req.WithContext(ctx))
+	accesslog.WithHandlerName(r.Name, r.Handler).ServeHTTP(wri, req)
 }
 
 // Router is a http.Handler that can handle routes.
