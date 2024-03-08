@@ -43,11 +43,11 @@ func TestConfig_ApplyTo(t *testing.T) {
 	var have http.Server
 	DefaultConfig().ApplyTo(&have)
 
-	assert.Equal(t, http.Server{
+	assert.Equal(t, &http.Server{
 		ReadTimeout:       5 * time.Second,
 		ReadHeaderTimeout: 2 * time.Second,
 		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       120 * time.Second,
 		MaxHeaderBytes:    10240,
-	}, have)
+	}, &have)
 }
