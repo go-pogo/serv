@@ -39,7 +39,7 @@ type Config struct {
 	// parsing the request header's keys and values, including the request line.
 	// It does not limit the size of the request body.
 	// See http.Server for additional information.
-	MaxHeaderBytes uint64 `default:"10 KiB"` // data.Bytes
+	MaxHeaderBytes uint64 `default:"10240"` // data.Bytes => 10 KiB
 }
 
 // DefaultConfig returns a Config with default values.

@@ -10,8 +10,14 @@ import (
 	"net/http"
 )
 
+const contentTypeJSON = "application/json"
+
 // WriteJSON encodes v to JSON and writes it to w.
 func WriteJSON(w http.ResponseWriter, v any) error {
-	w.Header().Set("Content-Type", "application/json")
-	return errors.WithStack(json.NewEncoder(w).Encode(v))
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		return errors.WithStack(err)
+	}
+
+	w.Header().Set("Content-Type", contentTypeJSON)
+	return nil
 }
