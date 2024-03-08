@@ -11,9 +11,9 @@ import (
 
 func TestNewDefault(t *testing.T) {
 	var want Server
-	DefaultConfig().apply(&want)
+	_ = DefaultConfig().apply(&want)
 
 	have, err := NewDefault()
 	assert.NoError(t, err)
-	assert.Equal(t, want, *have)
+	assert.Equal(t, &want, have)
 }
