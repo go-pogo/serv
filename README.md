@@ -22,7 +22,7 @@ serv
 [doc-url]: https://pkg.go.dev/github.com/go-pogo/serv
 
 
-Package `serv`.
+Package `serv` contains a server implementation based on http.Server, with sane and safe defaults.
 
 ```sh
 go get github.com/go-pogo/serv
