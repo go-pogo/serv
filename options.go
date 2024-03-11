@@ -101,10 +101,6 @@ func WithBaseContext(ctx context.Context) Option {
 	})
 }
 
-type TLSOption interface {
-	Apply(conf *tls.Config) error
-}
-
 func WithTLS(conf *tls.Config, opts ...TLSOption) Option {
 	return optionFunc(func(s *Server) error {
 		if conf == nil {
@@ -115,7 +111,7 @@ func WithTLS(conf *tls.Config, opts ...TLSOption) Option {
 
 		var err error
 		for _, opt := range opts {
-			err = errors.Append(err, opt.Apply(conf))
+			err = errors.Append(err, opt.ApplyTo(conf))
 		}
 		return err
 	})

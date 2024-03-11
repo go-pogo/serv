@@ -32,22 +32,32 @@ func DefaultTLSConfig() *tls.Config {
 	}
 }
 
+type TLSOption interface {
+	ApplyTo(conf *tls.Config) error
+}
+
 var _ TLSOption = (*TLSConfig)(nil)
 
 type TLSConfig struct {
-	CaCertFile string `env:"TLS_CA_FILE" flag:"tlscacert"`
-	CertFile   string `env:"TLS_CERT_FILE" flag:"tlscert"`
-	KeyFile    string `env:"TLS_KEY_FILE" flag:"tlskey"`
+	CaCertFile string `env:"" flag:"tls-cacert"`
+	CertFile   string `env:"" flag:"tls-cert"`
+	KeyFile    string `env:"" flag:"tls-key"`
 
-	// InsecureSkipVerify should only be used for testing
-	InsecureSkipVerify bool `env:"INSECURE_SKIP_VERIFY"`
+	// todo: implement mtls
+	// todo: implement skip verify
+
+	// VerifyClient enables mutual tls authentication.
+	VerifyClient bool `env:""`
+	// InsecureSkipVerify disabled all certificate verification and should only
+	// be used for testing.
+	InsecureSkipVerify bool `env:""`
 }
 
 func (tc TLSConfig) IsZero() bool {
 	return tc.CertFile != "" && tc.KeyFile != ""
 }
 
-func (tc TLSConfig) Apply(conf *tls.Config) error {
+func (tc TLSConfig) ApplyTo(conf *tls.Config) error {
 	if tc.CaCertFile != "" {
 		data, err := os.ReadFile(tc.CaCertFile)
 		if err != nil {
@@ -62,7 +72,7 @@ func (tc TLSConfig) Apply(conf *tls.Config) error {
 	return TLSKeyPair{
 		CertFile: tc.CaCertFile,
 		KeyFile:  tc.KeyFile,
-	}.Apply(conf)
+	}.ApplyTo(conf)
 }
 
 // CertificateLoader loads a tls.Certificate from any source.
@@ -92,7 +102,7 @@ func (kp TLSKeyPair) LoadCertificate() (*tls.Certificate, error) {
 	return &c, errors.WithStack(err)
 }
 
-func (kp TLSKeyPair) Apply(conf *tls.Config) error {
+func (kp TLSKeyPair) ApplyTo(conf *tls.Config) error {
 	if c, err := kp.LoadCertificate(); err != nil {
 		return err
 	} else if c != nil {
@@ -122,7 +132,7 @@ func (pb TLSPemBlocks) LoadCertificate() (*tls.Certificate, error) {
 	return &c, errors.WithStack(err)
 }
 
-func (pb TLSPemBlocks) Apply(conf *tls.Config) error {
+func (pb TLSPemBlocks) ApplyTo(conf *tls.Config) error {
 	if c, err := pb.LoadCertificate(); err != nil {
 		return err
 	} else if c != nil {
