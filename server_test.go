@@ -10,10 +10,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	var want Server
-	_ = DefaultConfig().apply(&want)
-
 	have, err := New()
 	assert.NoError(t, err)
-	assert.Equal(t, &want, have)
+	assert.Equal(t, DefaultConfig(), have.Config)
 }
