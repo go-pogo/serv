@@ -28,12 +28,13 @@ type httpServer = http.Server
 type Server struct {
 	httpServer
 
+	// Config to apply to the server, DefaultConfig if nil.
 	Config *Config
 	// Addr optionally specifies the TCP address for the server to listen on.
 	// See net.Dial for details of the address format.
 	// See http.Server for additional information.
 	Addr string
-	// Handler to invoke, http.DefaultServeMux if nil
+	// Handler to invoke, http.DefaultServeMux if nil.
 	Handler http.Handler
 
 	log        Logger
@@ -42,27 +43,20 @@ type Server struct {
 	started    atomic.Bool
 }
 
-// New creates a new Server.
+// New creates a new Server. DefaultConfig is applied to it when no other
+// Config is provided as option.
 func New(opts ...Option) (*Server, error) {
 	var srv Server
-	if err := srv.Apply(opts...); err != nil {
+	if err := srv.With(opts...); err != nil {
 		return nil, err
+	}
+	if srv.Config == nil {
+		srv.Config = DefaultConfig()
 	}
 	return &srv, nil
 }
 
-// NewDefault creates a new Server with DefaultConfig applied to it.
-func NewDefault(opts ...Option) (*Server, error) {
-	srv := Server{Config: new(Config)}
-	srv.Config.Default()
-
-	if err := srv.Apply(opts...); err != nil {
-		return nil, err
-	}
-	return &srv, nil
-}
-
-func (srv *Server) Apply(opts ...Option) error {
+func (srv *Server) With(opts ...Option) error {
 	var err error
 	for _, opt := range opts {
 		err = errors.Append(err, opt.apply(srv))
@@ -73,6 +67,13 @@ func (srv *Server) Apply(opts ...Option) error {
 func (srv *Server) Name() string { return srv.name }
 
 func (srv *Server) IsStarted() bool { return srv.started.Load() }
+
+func (srv *Server) config() *Config {
+	if srv.Config == nil {
+		srv.Config = DefaultConfig()
+	}
+	return srv.Config
+}
 
 func (srv *Server) start() error {
 	if srv.IsStarted() {
@@ -93,10 +94,8 @@ func (srv *Server) start() error {
 		handler = srv.middleware.Wrap(handler.ServeHTTP)
 		srv.middleware = nil
 	}
-	if srv.Config != nil {
-		srv.Config.ApplyTo(&srv.httpServer)
-	}
 
+	srv.config().ApplyTo(&srv.httpServer)
 	srv.httpServer.Addr = srv.Addr
 	srv.httpServer.Handler = handler
 

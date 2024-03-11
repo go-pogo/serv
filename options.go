@@ -31,7 +31,7 @@ func WithOptions(opts ...Option) Option {
 		return opts[0]
 	default:
 		return optionFunc(func(srv *Server) error {
-			return srv.Apply(opts...)
+			return srv.With(opts...)
 		})
 	}
 }
