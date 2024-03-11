@@ -9,11 +9,11 @@ import (
 	"testing"
 )
 
-func TestNewDefault(t *testing.T) {
+func TestNew(t *testing.T) {
 	var want Server
 	_ = DefaultConfig().apply(&want)
 
-	have, err := NewDefault()
+	have, err := New()
 	assert.NoError(t, err)
 	assert.Equal(t, &want, have)
 }
