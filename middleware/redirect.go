@@ -9,11 +9,11 @@ import (
 	"strings"
 )
 
-// RedirectHttps adds middleware that redirects any http request to its https
-// equivalent url.
+// RedirectHTTPS adds middleware that redirects any http request to its https
+// equivalent url, using http.Redirect.
 // It uses the redirect code http.StatusMovedPermanently for any GET request
 // and http.StatusTemporaryRedirect for any other method.
-func RedirectHttps() Wrapper {
+func RedirectHTTPS() Wrapper {
 	return WrapperFunc(func(next http.HandlerFunc) http.Handler {
 		return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
 			if req.URL.Scheme == "http" {
@@ -27,7 +27,8 @@ func RedirectHttps() Wrapper {
 }
 
 // RemoveTrailingSlash adds middleware that redirects any request which has a
-// trailing slash to the equivalent path without trailing slash.
+// trailing slash to the equivalent path without trailing slash, using
+// http.Redirect.
 // It uses the redirect code http.StatusMovedPermanently for any GET request
 // and http.StatusTemporaryRedirect for any other method.
 func RemoveTrailingSlash() Wrapper {
