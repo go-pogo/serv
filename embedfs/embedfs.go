@@ -44,7 +44,7 @@ func (s *FileServer) ModTime() time.Time { return s.modTime }
 func (s *FileServer) applyOpts(opts []Option) error {
 	var err error
 	for _, opt := range opts {
-		errors.AppendInto(&err, opt(s))
+		err = errors.Append(err, opt(s))
 	}
 	return err
 }
