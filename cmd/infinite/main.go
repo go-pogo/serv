@@ -36,8 +36,7 @@ func main() {
 	})
 
 	ctx, stopFn := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	srv, err := serv.NewDefault(
-		port, mux,
+	srv, err := serv.New(port, mux,
 		serv.WithName("infinite"),
 		serv.WithBaseContext(ctx),
 		serv.WithDefaultLogger(),
