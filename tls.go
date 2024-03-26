@@ -6,9 +6,12 @@ package serv
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"github.com/go-pogo/errors"
 	"os"
 )
+
+const ErrAppendRootCAFailure errors.Msg = "failed to append certificate to root ca pool"
 
 // DefaultTLSConfig returns a modern preconfigured tls.Config.
 func DefaultTLSConfig() *tls.Config {
@@ -36,7 +39,10 @@ type TLSOption interface {
 	ApplyTo(conf *tls.Config) error
 }
 
-var _ TLSOption = (*TLSConfig)(nil)
+var (
+	_ Option    = (*TLSConfig)(nil)
+	_ TLSOption = (*TLSConfig)(nil)
+)
 
 type TLSConfig struct {
 	CaCertFile string `env:"" flag:"tls-cacert"`
@@ -44,17 +50,11 @@ type TLSConfig struct {
 	KeyFile    string `env:"" flag:"tls-key"`
 
 	// todo: implement mtls
-	// todo: implement skip verify
-
 	// VerifyClient enables mutual tls authentication.
 	VerifyClient bool `env:""`
 	// InsecureSkipVerify disabled all certificate verification and should only
-	// be used for testing.
+	// be used for testing. See tls.Config for additional information.
 	InsecureSkipVerify bool `env:""`
-}
-
-func (tc TLSConfig) IsZero() bool {
-	return tc.CertFile != "" && tc.KeyFile != ""
 }
 
 func (tc TLSConfig) ApplyTo(conf *tls.Config) error {
@@ -63,16 +63,31 @@ func (tc TLSConfig) ApplyTo(conf *tls.Config) error {
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		conf.RootCAs.AppendCertsFromPEM(data)
-	}
-	if tc.InsecureSkipVerify {
-		conf.InsecureSkipVerify = tc.InsecureSkipVerify
+		if conf.RootCAs == nil {
+			if conf.RootCAs, err = x509.SystemCertPool(); err != nil {
+				return errors.WithStack(err)
+			}
+		}
+		if !conf.RootCAs.AppendCertsFromPEM(data) {
+			return errors.New(ErrAppendRootCAFailure)
+		}
 	}
 
+	conf.InsecureSkipVerify = tc.InsecureSkipVerify
+
 	return TLSKeyPair{
-		CertFile: tc.CaCertFile,
+		CertFile: tc.CertFile,
 		KeyFile:  tc.KeyFile,
 	}.ApplyTo(conf)
+}
+
+func (tc TLSConfig) apply(s *Server) error {
+	if tc.CertFile == "" || tc.KeyFile == "" {
+		return nil
+	}
+
+	s.TLSConfig = DefaultTLSConfig()
+	return tc.ApplyTo(s.TLSConfig)
 }
 
 // CertificateLoader loads a tls.Certificate from any source.
