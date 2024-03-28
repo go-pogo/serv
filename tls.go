@@ -45,11 +45,14 @@ var (
 )
 
 type TLSConfig struct {
-	CaCertFile string `env:"" flag:"tls-cacert"`
-	CertFile   string `env:"" flag:"tls-cert"`
-	KeyFile    string `env:"" flag:"tls-key"`
+	// CACertFile is the path to the root certificate authority file. It is used
+	// to verify the client's (whom connect to the server) certificate.
+	CACertFile string `env:"" flag:"tls-ca"`
+	// CertFile is the path to the server's certificate file.
+	CertFile string `env:"" flag:"tls-cert"`
+	// KeyFile is the path to the server's private key file.
+	KeyFile string `env:"" flag:"tls-key"`
 
-	// todo: implement mtls
 	// VerifyClient enables mutual tls authentication.
 	VerifyClient bool `env:""`
 	// InsecureSkipVerify disabled all certificate verification and should only
@@ -58,22 +61,23 @@ type TLSConfig struct {
 }
 
 func (tc TLSConfig) ApplyTo(conf *tls.Config) error {
-	if tc.CaCertFile != "" {
-		data, err := os.ReadFile(tc.CaCertFile)
+	if tc.CACertFile != "" {
+		data, err := os.ReadFile(tc.CACertFile)
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		if conf.RootCAs == nil {
-			if conf.RootCAs, err = x509.SystemCertPool(); err != nil {
-				return errors.WithStack(err)
-			}
+		if conf.ClientCAs == nil {
+			conf.ClientCAs = x509.NewCertPool()
 		}
-		if !conf.RootCAs.AppendCertsFromPEM(data) {
+		if !conf.ClientCAs.AppendCertsFromPEM(data) {
 			return errors.New(ErrAppendRootCAFailure)
 		}
 	}
 
 	conf.InsecureSkipVerify = tc.InsecureSkipVerify
+	if tc.VerifyClient {
+		conf.ClientAuth = tls.RequireAndVerifyClientCert
+	}
 
 	return TLSKeyPair{
 		CertFile: tc.CertFile,
@@ -93,6 +97,18 @@ func (tc TLSConfig) apply(s *Server) error {
 // CertificateLoader loads a tls.Certificate from any source.
 type CertificateLoader interface {
 	LoadCertificate() (*tls.Certificate, error)
+}
+
+// GetCertificate can be used in tls.Config to load a certificate when it's
+// requested for.
+func GetCertificate(cl CertificateLoader) func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+	return func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+		cert, err := cl.LoadCertificate()
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		return cert, nil
+	}
 }
 
 var (
@@ -118,12 +134,16 @@ func (kp TLSKeyPair) LoadCertificate() (*tls.Certificate, error) {
 }
 
 func (kp TLSKeyPair) ApplyTo(conf *tls.Config) error {
+	if conf.GetCertificate == nil {
+		conf.GetCertificate = GetCertificate(kp)
+		return nil
+	}
+
 	if c, err := kp.LoadCertificate(); err != nil {
 		return err
 	} else if c != nil {
 		conf.Certificates = append(conf.Certificates, *c)
 	}
-
 	return nil
 }
 
