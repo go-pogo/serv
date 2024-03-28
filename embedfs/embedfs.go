@@ -19,7 +19,7 @@ type FS interface {
 
 type Option func(f *FileServer) error
 
-var _ http.Handler = new(FileServer)
+var _ http.Handler = (*FileServer)(nil)
 
 type FileServer struct {
 	FS
