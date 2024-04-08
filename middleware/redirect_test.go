@@ -14,7 +14,7 @@ import (
 func TestRedirectHTTPS(t *testing.T) {
 	const wantBody = "Hello, World!"
 	handler := RedirectHTTPS().Wrap(func(wri http.ResponseWriter, req *http.Request) {
-		wri.Write([]byte(wantBody))
+		_, _ = wri.Write([]byte(wantBody))
 	})
 
 	t.Run("redirect", func(t *testing.T) {
@@ -35,7 +35,7 @@ func TestRedirectHTTPS(t *testing.T) {
 func TestRemoveTrailingSlash(t *testing.T) {
 	const wantBody = "Hello, World!"
 	handler := RemoveTrailingSlash().Wrap(func(wri http.ResponseWriter, req *http.Request) {
-		wri.Write([]byte(wantBody))
+		_, _ = wri.Write([]byte(wantBody))
 	})
 
 	t.Run("redirect", func(t *testing.T) {

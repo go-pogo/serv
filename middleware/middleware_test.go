@@ -14,17 +14,17 @@ import (
 func TestWrap(t *testing.T) {
 	handler := Wrap(
 		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.Write([]byte("c"))
+			_, _ = w.Write([]byte("c"))
 		}),
 		WrapperFunc(func(next http.HandlerFunc) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-				w.Write([]byte("a"))
+				_, _ = w.Write([]byte("a"))
 				next(w, nil)
 			})
 		}),
 		WrapperFunc(func(next http.HandlerFunc) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-				w.Write([]byte("b"))
+				_, _ = w.Write([]byte("b"))
 				next(w, nil)
 			})
 		}),
@@ -37,10 +37,10 @@ func TestWrap(t *testing.T) {
 
 func TestHandlerFunc_Wrap(t *testing.T) {
 	handlerA := func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("a"))
+		_, _ = w.Write([]byte("a"))
 	}
 	handlerB := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("b"))
+		_, _ = w.Write([]byte("b"))
 	})
 
 	rec := httptest.NewRecorder()
