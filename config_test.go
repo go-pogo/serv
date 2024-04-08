@@ -14,6 +14,24 @@ import (
 	"time"
 )
 
+func TestConfig(t *testing.T) {
+	t.Run("zero", func(t *testing.T) {
+		var cfg Config
+		assert.True(t, cfg.IsZero())
+	})
+	t.Run("non-zero", func(t *testing.T) {
+		cfg := Config{ReadTimeout: 2 * time.Second}
+		assert.False(t, cfg.IsZero())
+	})
+}
+
+func TestDefaultConfig(t *testing.T) {
+	cfg := DefaultConfig()
+	assert.Equal(t, defaultConfig, *cfg)
+	cfg.IdleTimeout *= 2
+	assert.NotEqual(t, defaultConfig, *cfg)
+}
+
 func TestConfig_Default(t *testing.T) {
 	prepare := func() (want Config, err error) {
 		val := reflect.ValueOf(&want).Elem()
@@ -44,10 +62,10 @@ func TestConfig_ApplyTo(t *testing.T) {
 	DefaultConfig().ApplyTo(&have)
 
 	assert.Equal(t, &http.Server{
-		ReadTimeout:       5 * time.Second,
-		ReadHeaderTimeout: 2 * time.Second,
-		WriteTimeout:      10 * time.Second,
-		IdleTimeout:       120 * time.Second,
-		MaxHeaderBytes:    10240,
+		ReadTimeout:       defaultConfig.ReadTimeout,
+		ReadHeaderTimeout: defaultConfig.ReadHeaderTimeout,
+		WriteTimeout:      defaultConfig.WriteTimeout,
+		IdleTimeout:       defaultConfig.IdleTimeout,
+		MaxHeaderBytes:    int(defaultConfig.MaxHeaderBytes),
 	}, &have)
 }

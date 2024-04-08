@@ -12,5 +12,5 @@ var defaultConfig = Config{
 	WriteTimeout:      10 * time.Second,
 	IdleTimeout:       120 * time.Second,
 	ShutdownTimeout:   60 * time.Second,
-	MaxHeaderBytes:    10240, // 10 KiB, 10 * data.Kibibyte
+	MaxHeaderBytes:    10240, // 10 KiB => 10 * data.Kibibyte
 }

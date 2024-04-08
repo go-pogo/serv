@@ -16,25 +16,20 @@ type Config struct {
 	// including the body.
 	// See http.Server for additional information.
 	ReadTimeout time.Duration `default:"5s"`
-
 	// ReadHeaderTimeout is the amount of time allowed to read request headers.
 	// See http.Server for additional information.
 	ReadHeaderTimeout time.Duration `default:"2s"`
-
 	// WriteTimeout is the maximum duration before timing out writes of the
 	// response.
 	// See http.Server for additional information.
 	WriteTimeout time.Duration `default:"10s"`
-
 	// IdleTimeout is the maximum amount of time to wait for the next request
 	// when keep-alives are enabled.
 	// See http.Server for additional information.
 	IdleTimeout time.Duration `default:"120s"`
-
 	// ShutdownTimeout is the maximum duration for shutting down the server and
 	// waiting for all connections to be closed.
 	ShutdownTimeout time.Duration `default:"60s"`
-
 	// MaxHeaderBytes controls the maximum number of bytes the server will read
 	// parsing the request header's keys and values, including the request line.
 	// It does not limit the size of the request body.
@@ -42,10 +37,9 @@ type Config struct {
 	MaxHeaderBytes uint64 `default:"10240"` // data.Bytes => 10 KiB
 }
 
-// DefaultConfig returns a Config with default values.
+// DefaultConfig returns a Config with safe default values.
 func DefaultConfig() *Config {
-	var c Config
-	c.Default()
+	c := defaultConfig
 	return &c
 }
 
@@ -55,23 +49,22 @@ func (cfg *Config) IsZero() bool { return *cfg == Config{} }
 // Default sets any zero values on Config to a default non-zero value.
 func (cfg *Config) Default() {
 	if cfg.ReadTimeout == 0 {
-		cfg.ReadTimeout = 5 * time.Second
+		cfg.ReadTimeout = defaultConfig.ReadTimeout
 	}
 	if cfg.ReadHeaderTimeout == 0 {
-		cfg.ReadHeaderTimeout = 2 * time.Second
+		cfg.ReadHeaderTimeout = defaultConfig.ReadHeaderTimeout
 	}
 	if cfg.WriteTimeout == 0 {
-		cfg.WriteTimeout = 10 * time.Second
+		cfg.WriteTimeout = defaultConfig.WriteTimeout
 	}
 	if cfg.IdleTimeout == 0 {
-		cfg.IdleTimeout = 120 * time.Second
-	}
-	if cfg.MaxHeaderBytes == 0 {
-		cfg.MaxHeaderBytes = 10240
-		//cfg.MaxHeaderBytes = 10 * data.Kibibyte
+		cfg.IdleTimeout = defaultConfig.IdleTimeout
 	}
 	if cfg.ShutdownTimeout == 0 {
-		cfg.ShutdownTimeout = 60 * time.Second
+		cfg.ShutdownTimeout = defaultConfig.ShutdownTimeout
+	}
+	if cfg.MaxHeaderBytes == 0 {
+		cfg.MaxHeaderBytes = defaultConfig.MaxHeaderBytes
 	}
 }
 
