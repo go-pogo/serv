@@ -49,6 +49,9 @@ func DefaultConfig() *Config {
 	return &c
 }
 
+// IsZero indicates Config equals its zero value.
+func (cfg *Config) IsZero() bool { return *cfg == Config{} }
+
 // Default sets any zero values on Config to a default non-zero value.
 func (cfg *Config) Default() {
 	if cfg.ReadTimeout == 0 {
@@ -92,6 +95,6 @@ func (cfg *Config) ApplyTo(s *http.Server) {
 }
 
 func (cfg *Config) apply(s *Server) error {
-	s.Config = cfg
+	s.Config = *cfg
 	return nil
 }

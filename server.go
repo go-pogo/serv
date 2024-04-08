@@ -22,14 +22,14 @@ const (
 
 type httpServer = http.Server
 
-// Server is a wrapper for http.Server.
-// The zero value is safe and ready to use, and will apply safe defaults on
-// starting the server.
+// Server is a wrapper for http.Server. The zero value is safe and ready to use,
+// and will apply safe defaults on starting the server.
 type Server struct {
 	httpServer
 
-	// Config to apply to the server, DefaultConfig if nil.
-	Config *Config
+	// Config to apply to the internal http.Server, DefaultConfig if zero.
+	// Changes to Config after starting the server will not be applied.
+	Config Config
 	// Addr optionally specifies the TCP address for the server to listen on.
 	// See net.Dial for details of the address format.
 	// See http.Server for additional information.
@@ -43,20 +43,22 @@ type Server struct {
 	started    atomic.Bool
 }
 
-// New creates a new Server. DefaultConfig is applied to it when no other
-// Config is provided as option.
+// New creates a new Server with a default Config.
 func New(opts ...Option) (*Server, error) {
-	var srv Server
+	srv := Server{Config: defaultConfig}
 	if err := srv.With(opts...); err != nil {
 		return nil, err
-	}
-	if srv.Config == nil {
-		srv.Config = DefaultConfig()
 	}
 	return &srv, nil
 }
 
+// With applies additional option to the server. It will return an
+// ErrAlreadyStarted error when the server is already started.
 func (srv *Server) With(opts ...Option) error {
+	if srv.IsStarted() {
+		return errors.New(ErrAlreadyStarted)
+	}
+
 	var err error
 	for _, opt := range opts {
 		err = errors.Append(err, opt.apply(srv))
@@ -64,16 +66,12 @@ func (srv *Server) With(opts ...Option) error {
 	return err
 }
 
+// Name returns an optional provided name of the server. Use WithName to set
+// the server's name.
 func (srv *Server) Name() string { return srv.name }
 
+// IsStarted indicates if the server is started.
 func (srv *Server) IsStarted() bool { return srv.started.Load() }
-
-func (srv *Server) config() *Config {
-	if srv.Config == nil {
-		srv.Config = DefaultConfig()
-	}
-	return srv.Config
-}
 
 func (srv *Server) start() error {
 	if srv.IsStarted() {
@@ -95,7 +93,11 @@ func (srv *Server) start() error {
 		srv.middleware = nil
 	}
 
-	srv.config().ApplyTo(&srv.httpServer)
+	if srv.Config.IsZero() {
+		srv.Config = defaultConfig
+	}
+
+	srv.Config.ApplyTo(&srv.httpServer)
 	srv.httpServer.Addr = srv.Addr
 	srv.httpServer.Handler = handler
 
@@ -103,7 +105,8 @@ func (srv *Server) start() error {
 	return nil
 }
 
-// Serve is a wrapper for http.Server.Serve.
+// Serve starts the server by accepting incoming connections on the
+// net.Listener l. See http.Server for additional information.
 func (srv *Server) Serve(l net.Listener) error {
 	if err := srv.start(); err != nil {
 		return err
@@ -155,6 +158,10 @@ func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 	return err
 }
 
+// Run starts the server and calls either ListenAndServe or ListenAndServeTLS,
+// depending on the provided TLS Option(s).
+// Unlike Serve, ListenAndServe, ServeTLS, and ListenAndServeTLS, Run will not
+// return a http.ErrServerClosed error when the server is closed.
 func (srv *Server) Run() error {
 	if srv.IsStarted() {
 		return errors.New(ErrAlreadyStarted)
@@ -192,7 +199,7 @@ func (srv *Server) Shutdown(ctx context.Context) error {
 	srv.log.ServerShutdown(srv.name)
 	srv.httpServer.SetKeepAlivesEnabled(false)
 
-	if srv.Config != nil && srv.Config.ShutdownTimeout != 0 {
+	if srv.Config.ShutdownTimeout != 0 {
 		if t, ok := ctx.Deadline(); !ok || srv.Config.ShutdownTimeout < time.Until(t) {
 			// shutdown timeout is set to a lower value, update context
 			var cancelFn context.CancelFunc
