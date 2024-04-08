@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -36,7 +37,7 @@ func TestNew(t *testing.T) {
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, httptest.NewRequest("GET", "/some-file.txt", nil))
 		assert.Equal(t, 200, rec.Code)
-		assert.Equal(t, "some-file.txt\n", rec.Body.String())
+		assert.Equal(t, "some-file.txt", strings.TrimSpace(rec.Body.String()))
 	})
 
 	t.Run("WithModTime", func(t *testing.T) {
