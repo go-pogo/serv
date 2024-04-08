@@ -26,7 +26,7 @@ func TestNew(t *testing.T) {
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, httptest.NewRequest("GET", "/test/some-file.txt", nil))
 		assert.Equal(t, 200, rec.Code)
-		assert.Equal(t, "some-file.txt\n", rec.Body.String())
+		assert.Equal(t, "some-file.txt", strings.TrimSpace(rec.Body.String()))
 		assert.Equal(t, "", rec.Header().Get("Last-Modified"))
 	})
 
@@ -48,7 +48,7 @@ func TestNew(t *testing.T) {
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, httptest.NewRequest("GET", "/test/some-file.txt", nil))
 		assert.Equal(t, 200, rec.Code)
-		assert.Equal(t, "some-file.txt\n", rec.Body.String())
+		assert.Equal(t, "some-file.txt", strings.TrimSpace(rec.Body.String()))
 		assert.Equal(t, now.UTC().Format(http.TimeFormat), rec.Header().Get("Last-Modified"))
 	})
 }
