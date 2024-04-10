@@ -44,13 +44,11 @@ func main() {
 	})
 
 	ctx, stopFn := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	srv, err := serv.New(port, mux,
+	srv, err := serv.New(port,
 		serv.WithName("serv"),
 		serv.WithBaseContext(ctx),
 		serv.WithDefaultLogger(),
-		serv.WithMiddleware(
-			accesslog.Middleware(accesslog.DefaultLogger(nil)),
-		),
+		serv.WithHandler(accesslog.Middleware(accesslog.DefaultLogger(nil), mux)),
 	)
 	errors.FatalOnErr(err)
 

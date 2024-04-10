@@ -8,8 +8,6 @@ import (
 	"context"
 	"crypto/tls"
 	"github.com/go-pogo/errors"
-	"github.com/go-pogo/serv/internal"
-	"github.com/go-pogo/serv/middleware"
 	"net"
 	"net/http"
 )
@@ -61,19 +59,6 @@ func WithRoutes(reg ...RoutesRegisterer) Option {
 			}
 		}
 		return errors.New(ErrHandlerIsNoRouteHandler)
-	})
-}
-
-// WithMiddleware adds the middleware.Middleware to an internal list. When the
-// Server is started, it's Handler is wrapped with this middleware.
-func WithMiddleware(mw ...middleware.Wrapper) Option {
-	return optionFunc(func(s *Server) error {
-		if s.middleware == nil {
-			s.middleware = mw
-		} else {
-			s.middleware = append(s.middleware, mw...)
-		}
-		return nil
 	})
 }
 

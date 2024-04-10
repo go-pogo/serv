@@ -6,18 +6,15 @@ package otelaccesslog
 
 import (
 	"context"
-	"github.com/go-pogo/serv/accesslog"
-	"github.com/go-pogo/serv/middleware"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	"go.opentelemetry.io/otel/trace"
 	"net/http"
 )
 
-// Wrap wraps a http.Handler so it's request uri is added to the trace.Span
-// derived from the http.Request's context.
+// Middleware wraps a http.Handler so it's request uri is added to the
+// trace.Span derived from the http.Request's context.
 // This is a workaround for https://github.com/open-telemetry/opentelemetry-go/commit/7b749591320bfcdef2061f4d4f5aa533ab76b47f
-// Wrap has the same method signature as accesslog.Wrap for ease of use.
-func Wrap(_ accesslog.Logger, next http.Handler) http.Handler {
+func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
 		trace.SpanFromContext(req.Context()).SetAttributes(
 			semconv.URLPath(req.URL.Path),
@@ -26,14 +23,6 @@ func Wrap(_ accesslog.Logger, next http.Handler) http.Handler {
 			semconv.HTTPTargetKey.String(req.RequestURI),
 		)
 		next.ServeHTTP(wri, req)
-	})
-}
-
-// Middleware returns Wrap as middleware.Middleware.
-// It has the same method signature as accesslog.Middleware for ease of use.
-func Middleware(_ accesslog.Logger) middleware.Wrapper {
-	return middleware.WrapperFunc(func(next http.HandlerFunc) http.Handler {
-		return Wrap(nil, next)
 	})
 }
 

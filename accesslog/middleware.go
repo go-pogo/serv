@@ -7,8 +7,7 @@ package accesslog
 import (
 	"context"
 	"github.com/felixge/httpsnoop"
-	"github.com/go-pogo/serv/internal"
-	"github.com/go-pogo/serv/middleware"
+	"github.com/go-pogo/serv"
 	"net/http"
 	"sync/atomic"
 	"time"
@@ -20,9 +19,9 @@ type handler struct {
 	traffic int64
 }
 
-// Wrap wraps a http.Handler so it's request and response details are tracked
+// Middleware wraps a http.Handler so it's request and response details are tracked
 // and send to Logger log.
-func Wrap(log Logger, next http.Handler) http.Handler {
+func Middleware(log Logger, next http.Handler) http.Handler {
 	if log == nil {
 		log = NopLogger()
 	}
@@ -30,13 +29,6 @@ func Wrap(log Logger, next http.Handler) http.Handler {
 		log:  log,
 		next: next,
 	}
-}
-
-// Middleware returns Wrap as middleware.Middleware.
-func Middleware(log Logger) middleware.Wrapper {
-	return middleware.WrapperFunc(func(next http.HandlerFunc) http.Handler {
-		return Wrap(log, next)
-	})
 }
 
 func (c *handler) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
@@ -51,7 +43,7 @@ func (c *handler) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 	}
 
 	met := httpsnoop.CaptureMetrics(c.next, wri, req)
-	if settings.ShouldIgnore {
+	if settings.shouldIgnore {
 		return
 	}
 

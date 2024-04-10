@@ -7,7 +7,6 @@ package serv
 import (
 	"context"
 	"github.com/go-pogo/errors"
-	"github.com/go-pogo/serv/middleware"
 	"net"
 	"net/http"
 	"sync/atomic"
@@ -37,10 +36,9 @@ type Server struct {
 	// Handler to invoke, http.DefaultServeMux if nil.
 	Handler http.Handler
 
-	log        Logger
-	name       string
-	middleware middleware.Middleware
-	started    atomic.Bool
+	log     Logger
+	name    string
+	started atomic.Bool
 }
 
 // New creates a new Server with a default Config.
@@ -82,19 +80,16 @@ func (srv *Server) start() error {
 	if srv.log == nil {
 		srv.log = NopLogger()
 	}
+	if srv.Config.IsZero() {
+		srv.Config = defaultConfig
+	}
 
 	handler := srv.Handler
-	if len(srv.middleware) != 0 {
+	if srv.name != "" {
 		if srv.Handler == nil {
 			handler = http.DefaultServeMux
 		}
-
-		handler = srv.middleware.Wrap(handler.ServeHTTP)
-		srv.middleware = nil
-	}
-
-	if srv.Config.IsZero() {
-		srv.Config = defaultConfig
+		handler = WithServerName(srv.name, handler)
 	}
 
 	srv.Config.ApplyTo(&srv.httpServer)
