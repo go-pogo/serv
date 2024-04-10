@@ -58,8 +58,8 @@ func (c *handler) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 	det.StatusCode = met.Code
 	det.Duration = met.Duration
 	det.BytesWritten = met.Written
-	det.ServerName = internal.ServerName(ctx)
-	det.HandlerName = settings.HandlerName
+	det.ServerName = serv.ServerName(ctx)
+	det.HandlerName = serv.HandlerName(ctx)
 	det.UserAgent = req.UserAgent()
 
 	c.log.Log(ctx, det, req.Clone(&noopCtx{ctx}))

@@ -81,13 +81,9 @@ func WithMiddleware(mw ...middleware.Wrapper) Option {
 func WithName(name string) Option {
 	return optionFunc(func(s *Server) error {
 		s.name = name
-		return WithMiddleware(internal.ServerNameMiddleware(name)).apply(s)
+		return nil
 	})
 }
-
-// ServerName gets the server's name from context values. Its return value may
-// be an empty string.
-func ServerName(ctx context.Context) string { return internal.ServerName(ctx) }
 
 // BaseContext returns a function which returns the provided context.
 func BaseContext(ctx context.Context) func(_ net.Listener) context.Context {
