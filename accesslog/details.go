@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// Details are collected With Wrap and contain additional details of a request
-// and it's corresponding response.
+// Details are collected with Middleware and contain additional details of a
+// request and it's corresponding response.
 type Details struct {
 	ServerName  string
 	HandlerName string
