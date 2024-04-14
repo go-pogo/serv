@@ -60,12 +60,32 @@ type serveMux = http.ServeMux
 
 // ServeMux is a http.ServeMux wrapper which implements the Router interface.
 // See http.ServeMux for more information.
-type ServeMux struct{ serveMux }
+type ServeMux struct{ *serveMux }
 
 // NewServeMux creates a new ServeMux and is ready to be used.
-func NewServeMux() *ServeMux { return new(ServeMux) }
+func NewServeMux() *ServeMux {
+	return &ServeMux{serveMux: http.NewServeMux()}
+}
 
-func (mux *ServeMux) HandleRoute(route Route) { mux.handle(route) }
+var defaultServeMux = ServeMux{serveMux: http.DefaultServeMux}
+
+// DefaultServeMux returns a ServeMux which wraps around http.DefaultServeMux.
+func DefaultServeMux() *ServeMux { return &defaultServeMux }
+
+// This variable is used to support backwards compatibility with Go versions
+// prior to 1.22. It is true when the project's go.mod sets a go version of at
+// least 1.22.0 and GODEBUG does not contain "httpmuxgo121=1".
+// See https://go.dev/doc/go1.22#enhanced_routing_patterns for additional info.
+var useMethodInRoutePattern bool
+
+// HandleRoute registers a route to the ServeMux using Handle.
+func (mux *ServeMux) HandleRoute(route Route) {
+	pattern := route.Pattern
+	if useMethodInRoutePattern && route.Method != "" {
+		pattern = route.Method + " " + pattern
+	}
+	mux.serveMux.Handle(pattern, route)
+}
 
 func (mux *ServeMux) apply(s *Server) error {
 	s.Handler = mux

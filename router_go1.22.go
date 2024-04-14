@@ -6,6 +6,11 @@
 
 package serv
 
-func (mux *ServeMux) handle(route Route) {
-	mux.serveMux.Handle(route.Method+" "+route.Pattern, route.Handler)
+import (
+	"os"
+	"strings"
+)
+
+func init() {
+	useMethodInRoutePattern = !strings.Contains(os.Getenv("GODEBUG"), "httpmuxgo121=1")
 }
