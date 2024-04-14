@@ -34,23 +34,30 @@ type DefaultLogger struct {
 	*log.Logger
 }
 
-func (l *DefaultLogger) log(v ...string) {
+func (l *DefaultLogger) log(v string) {
 	if l.Logger == nil {
 		l.Logger = log.Default()
 	}
 	l.Logger.Println(v)
 }
 
+func (l *DefaultLogger) name(name string) string {
+	if name == "" {
+		return "server"
+	}
+	return "server " + name
+}
+
 func (l *DefaultLogger) ServerStart(name, addr string) {
-	l.log("server", name, "starting on", addr)
+	l.log(l.name(name) + " starting on " + addr)
 }
 
 func (l *DefaultLogger) ServerShutdown(name string) {
-	l.log("server", name, "shutting down")
+	l.log(l.name(name) + " shutting down")
 }
 
 func (l *DefaultLogger) ServerClose(name string) {
-	l.log("server", name, "closing")
+	l.log(l.name(name) + " closing")
 }
 
 func NopLogger() Logger { return new(nopLogger) }
