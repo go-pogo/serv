@@ -26,14 +26,14 @@ type httpServer = http.Server
 type Server struct {
 	httpServer
 
-	// Config to apply to the internal http.Server, DefaultConfig if zero.
+	// Config to apply to the internal http.Server, DefaultConfig() if zero.
 	// Changes to Config after starting the server will not be applied.
 	Config Config
 	// Addr optionally specifies the TCP address for the server to listen on.
 	// See net.Dial for details of the address format.
 	// See http.Server for additional information.
 	Addr string
-	// Handler to invoke, http.DefaultServeMux if nil.
+	// Handler to invoke, DefaultServeMux() if nil.
 	Handler http.Handler
 
 	log     Logger
@@ -87,7 +87,7 @@ func (srv *Server) start() error {
 	handler := srv.Handler
 	if srv.name != "" {
 		if srv.Handler == nil {
-			handler = http.DefaultServeMux
+			handler = DefaultServeMux()
 		}
 		handler = WithServerName(srv.name, handler)
 	}

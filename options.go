@@ -46,7 +46,7 @@ const ErrHandlerIsNoRouteHandler errors.Msg = "server handler is not a RouteHand
 func WithRoutes(reg ...RoutesRegisterer) Option {
 	return optionFunc(func(s *Server) error {
 		if s.Handler == nil {
-			mux := NewServeMux()
+			mux := DefaultServeMux()
 			for _, rr := range reg {
 				rr.RegisterRoutes(mux)
 			}
