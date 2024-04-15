@@ -37,6 +37,15 @@ type Config struct {
 	MaxHeaderBytes uint64 `default:"10240"` // data.Bytes => 10 KiB
 }
 
+var defaultConfig = Config{
+	ReadTimeout:       5 * time.Second,
+	ReadHeaderTimeout: 2 * time.Second,
+	WriteTimeout:      10 * time.Second,
+	IdleTimeout:       120 * time.Second,
+	ShutdownTimeout:   60 * time.Second,
+	MaxHeaderBytes:    10240, // 10 KiB => 10 * data.Kibibyte
+}
+
 // DefaultConfig returns a Config with safe default values.
 func DefaultConfig() *Config {
 	c := defaultConfig
@@ -70,6 +79,10 @@ func (cfg *Config) Default() {
 
 // ApplyTo applies the Config fields values to *http.Server s.
 func (cfg *Config) ApplyTo(s *http.Server) {
+	if s == nil {
+		return
+	}
+
 	if cfg.ReadTimeout != 0 {
 		s.ReadTimeout = cfg.ReadTimeout
 	}
