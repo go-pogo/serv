@@ -61,6 +61,10 @@ type TLSConfig struct {
 }
 
 func (tc TLSConfig) ApplyTo(conf *tls.Config) error {
+	if conf == nil {
+		return nil
+	}
+
 	if tc.CACertFile != "" {
 		data, err := os.ReadFile(tc.CACertFile)
 		if err != nil {
@@ -134,6 +138,9 @@ func (kp TLSKeyPair) LoadCertificate() (*tls.Certificate, error) {
 }
 
 func (kp TLSKeyPair) ApplyTo(conf *tls.Config) error {
+	if conf == nil {
+		return nil
+	}
 	if conf.GetCertificate == nil {
 		conf.GetCertificate = GetCertificate(kp)
 		return nil
@@ -168,6 +175,9 @@ func (pb TLSPemBlocks) LoadCertificate() (*tls.Certificate, error) {
 }
 
 func (pb TLSPemBlocks) ApplyTo(conf *tls.Config) error {
+	if conf == nil {
+		return nil
+	}
 	if c, err := pb.LoadCertificate(); err != nil {
 		return err
 	} else if c != nil {
