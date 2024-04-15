@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const ErrInvalidSubDir errors.Msg = "invalid sub directory"
+
 type FS interface {
 	fs.FS
 	fs.ReadDirFS
@@ -64,7 +66,7 @@ func WithSubDir(dir string) Option {
 
 		sub, err := fs.Sub(s.FS, dir)
 		if err != nil {
-			return errors.WithStack(err)
+			return errors.Wrap(err, ErrInvalidSubDir)
 		}
 
 		s.handler = http.FileServer(http.FS(sub))
