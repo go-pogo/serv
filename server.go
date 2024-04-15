@@ -85,11 +85,11 @@ func (srv *Server) start() error {
 	}
 
 	handler := srv.Handler
+	if srv.Handler == nil {
+		handler = DefaultServeMux()
+	}
 	if srv.name != "" {
-		if srv.Handler == nil {
-			handler = DefaultServeMux()
-		}
-		handler = WithServerName(srv.name, handler)
+		handler = AddServerName(srv.name, handler)
 	}
 
 	srv.Config.ApplyTo(&srv.httpServer)

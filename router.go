@@ -42,7 +42,7 @@ func (r Route) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	WithHandlerName(r.Name, r.Handler).ServeHTTP(wri, req)
+	AddHandlerName(r.Name, r.Handler).ServeHTTP(wri, req)
 }
 
 // Router is a http.Handler that can handle routes.

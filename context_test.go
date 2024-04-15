@@ -12,14 +12,50 @@ import (
 	"testing"
 )
 
-func TestHandlerName(t *testing.T) {
+func TestAddServerName(t *testing.T) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
-	var have string
-	WithHandlerName("foobar", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		have = HandlerName(req.Context())
-	})).ServeHTTP(nil, req)
+	t.Run("normal", func(t *testing.T) {
+		var have string
+		handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			have = ServerName(req.Context())
+		})
 
-	assert.Equal(t, "foobar", have)
+		AddServerName("foobar", handler).ServeHTTP(nil, req)
+		assert.Equal(t, "foobar", have)
+	})
+	t.Run("wrapped", func(t *testing.T) {
+		var have string
+		handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			have = ServerName(req.Context())
+		})
+
+		AddHandlerName("myhandler", AddServerName("foobar", handler)).ServeHTTP(nil, req)
+		assert.Equal(t, "foobar", have)
+	})
+}
+
+func TestAddHandlerName(t *testing.T) {
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
+	require.NoError(t, err)
+
+	t.Run("normal", func(t *testing.T) {
+		var have string
+		handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			have = HandlerName(req.Context())
+		})
+
+		AddHandlerName("foobar", handler).ServeHTTP(nil, req)
+		assert.Equal(t, "foobar", have)
+	})
+	t.Run("wrapped", func(t *testing.T) {
+		var have string
+		handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			have = HandlerName(req.Context())
+		})
+
+		AddServerName("myserver", AddHandlerName("foobar", handler)).ServeHTTP(nil, req)
+		assert.Equal(t, "foobar", have)
+	})
 }
