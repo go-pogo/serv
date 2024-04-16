@@ -9,12 +9,20 @@ import (
 	"github.com/go-pogo/errors"
 	"net"
 	"net/http"
-	"sync/atomic"
+	"sync"
 	"time"
 )
 
+type State uint32
+
 const (
-	ErrAlreadyStarted    errors.Msg = "server is already started"
+	StateUnstarted State = iota
+	StateClosed
+	StateClosing
+	StateStarted
+
+	ErrAlreadyStarted    errors.Msg = "server has already started"
+	ErrAlreadyClosing    errors.Msg = "server is already closing"
 	ErrUnstartedShutdown errors.Msg = "cannot shutdown server that is not started"
 	ErrUnstartedClose    errors.Msg = "cannot close server that is not started"
 )
@@ -36,27 +44,34 @@ type Server struct {
 	// Handler to invoke, DefaultServeMux() if nil.
 	Handler http.Handler
 
-	log     Logger
-	name    string
-	started atomic.Bool
+	mut   sync.RWMutex
+	log   Logger
+	name  string
+	state State
 }
 
 // New creates a new Server with a default Config.
 func New(opts ...Option) (*Server, error) {
 	srv := Server{Config: defaultConfig}
-	if err := srv.With(opts...); err != nil {
+	if err := srv.with(opts); err != nil {
 		return nil, err
 	}
 	return &srv, nil
 }
 
 // With applies additional option to the server. It will return an
-// ErrAlreadyStarted error when the server is already started.
+// ErrAlreadyStarted error when the server is already started
 func (srv *Server) With(opts ...Option) error {
-	if srv.IsStarted() {
+	if srv.State() == StateStarted {
 		return errors.New(ErrAlreadyStarted)
 	}
 
+	srv.mut.Lock()
+	defer srv.mut.Unlock()
+	return srv.with(opts)
+}
+
+func (srv *Server) with(opts []Option) error {
 	var err error
 	for _, opt := range opts {
 		err = errors.Append(err, opt.apply(srv))
@@ -66,17 +81,40 @@ func (srv *Server) With(opts ...Option) error {
 
 // Name returns an optional provided name of the server. Use WithName to set
 // the server's name.
-func (srv *Server) Name() string { return srv.name }
+func (srv *Server) Name() string {
+	srv.mut.RLock()
+	defer srv.mut.RUnlock()
+	return srv.name
+}
 
-// IsStarted indicates if the server is started.
-func (srv *Server) IsStarted() bool { return srv.started.Load() }
+// State returns the current state of the server.
+func (srv *Server) State() State {
+	srv.mut.RLock()
+	defer srv.mut.RUnlock()
+	return srv.state
+}
 
 func (srv *Server) start() error {
-	if srv.IsStarted() {
+	srv.mut.Lock()
+	defer srv.mut.Unlock()
+
+	if srv.state == StateStarted {
 		return errors.New(ErrAlreadyStarted)
 	}
-
-	srv.started.Store(true)
+	if srv.state == StateClosing {
+		return errors.New(ErrAlreadyClosing)
+	}
+	if srv.state == StateClosed {
+		srv.httpServer = http.Server{
+			DisableGeneralOptionsHandler: srv.httpServer.DisableGeneralOptionsHandler,
+			TLSConfig:                    srv.httpServer.TLSConfig,
+			TLSNextProto:                 srv.httpServer.TLSNextProto,
+			ConnState:                    srv.httpServer.ConnState,
+			ErrorLog:                     srv.httpServer.ErrorLog,
+			BaseContext:                  srv.httpServer.BaseContext,
+			ConnContext:                  srv.httpServer.ConnContext,
+		}
+	}
 	if srv.log == nil {
 		srv.log = NopLogger()
 	}
@@ -96,6 +134,7 @@ func (srv *Server) start() error {
 	srv.httpServer.Addr = srv.Addr
 	srv.httpServer.Handler = handler
 
+	srv.state = StateStarted
 	srv.log.ServerStart(srv.name, srv.Addr)
 	return nil
 }
@@ -158,16 +197,15 @@ func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 // Unlike Serve, ListenAndServe, ServeTLS, and ListenAndServeTLS, Run will not
 // return a http.ErrServerClosed error when the server is closed.
 func (srv *Server) Run() error {
-	if srv.IsStarted() {
-		return errors.New(ErrAlreadyStarted)
-	}
-
-	if srv.httpServer.TLSConfig != nil &&
+	srv.mut.RLock()
+	useTLS := srv.httpServer.TLSConfig != nil &&
 		(len(srv.httpServer.TLSConfig.Certificates) != 0 ||
-			srv.httpServer.TLSConfig.GetCertificate != nil) {
+			srv.httpServer.TLSConfig.GetCertificate != nil)
+	srv.mut.RUnlock()
+
+	if useTLS {
 		return dismissErrServerClosed(srv.ListenAndServeTLS("", ""))
 	}
-
 	return dismissErrServerClosed(srv.ListenAndServe())
 }
 
@@ -187,34 +225,53 @@ func dismissErrServerClosed(err error) error {
 // returns any error returned from closing the Server's underlying
 // net.Listener(s).
 func (srv *Server) Shutdown(ctx context.Context) error {
-	if !srv.IsStarted() {
+	if state := srv.State(); state == StateClosing {
+		return errors.New(ErrAlreadyClosing)
+	} else if state != StateStarted {
 		return errors.New(ErrUnstartedShutdown)
 	}
 
+	srv.mut.Lock()
+	srv.state = StateClosing
 	srv.log.ServerShutdown(srv.name)
 	srv.httpServer.SetKeepAlivesEnabled(false)
+	shutdownTimeout := srv.Config.ShutdownTimeout
+	srv.mut.Unlock()
 
-	if srv.Config.ShutdownTimeout != 0 {
-		if t, ok := ctx.Deadline(); !ok || srv.Config.ShutdownTimeout < time.Until(t) {
+	if shutdownTimeout != 0 {
+		if t, ok := ctx.Deadline(); !ok || shutdownTimeout < time.Until(t) {
 			// shutdown timeout is set to a lower value, update context
 			var cancelFn context.CancelFunc
-			ctx, cancelFn = context.WithTimeout(ctx, srv.Config.ShutdownTimeout)
+			ctx, cancelFn = context.WithTimeout(ctx, shutdownTimeout)
 			defer cancelFn()
 		}
 	}
 
+	defer srv.closed()
 	return errors.WithStack(srv.httpServer.Shutdown(ctx))
 }
 
-// Close immediately closes all active net.Listeners and any connections in
-// state http.StateNew, http.StateActive, or http.StateIdle. For a graceful
-// shutdown, use Shutdown.
-// It is a wrapper for http.NewClient.Close.
+// Close immediately closes all active [net.Listeners] and any connections in
+// state [http.StateNew], [http.StateActive], or [http.StateIdle].
+// For a graceful shutdown, use [Server.Shutdown].
 func (srv *Server) Close() error {
-	if !srv.IsStarted() {
+	if state := srv.State(); state == StateClosing {
+		return errors.New(ErrAlreadyClosing)
+	} else if state != StateStarted {
 		return errors.New(ErrUnstartedClose)
 	}
 
+	srv.mut.Lock()
+	srv.state = StateClosing
 	srv.log.ServerClose(srv.name)
-	return srv.httpServer.Close()
+	srv.mut.Unlock()
+
+	defer srv.closed()
+	return errors.WithStack(srv.httpServer.Close())
+}
+
+func (srv *Server) closed() {
+	srv.mut.Lock()
+	srv.state = StateClosed
+	srv.mut.Unlock()
 }
