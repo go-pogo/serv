@@ -24,7 +24,7 @@ func main() {
 	var port serv.Port = 80
 
 	cli := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	cli.Var(&port, "port", "server port")
+	cli.Var(&port, "port", "Server port")
 	_ = cli.Parse(os.Args[1:])
 
 	dir := cli.Arg(0)
@@ -45,7 +45,7 @@ func main() {
 
 	ctx, stopFn := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	srv, err := serv.New(port,
-		serv.WithName("serv"),
+		serv.WithName("fileserver"),
 		serv.WithBaseContext(ctx),
 		serv.WithDefaultLogger(),
 		serv.WithHandler(accesslog.Middleware(accesslog.DefaultLogger(nil), mux)),
