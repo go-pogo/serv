@@ -100,15 +100,25 @@ const panicNilTLSConfig = "serv.WithTLS: tls.Config should not be nil"
 func WithTLS(conf *tls.Config, opts ...TLSOption) Option {
 	return optionFunc(func(s *Server) error {
 		if conf == nil {
-			s.TLSConfig = DefaultTLSConfig()
-		} else {
-			s.TLSConfig = conf
+			panic(panicNilTLSConfig)
 		}
 
 		var err error
 		for _, opt := range opts {
 			err = errors.Append(err, opt.ApplyTo(conf))
 		}
-		return err
+		if err != nil {
+			return err
+		}
+
+		s.httpServer.TLSConfig = conf
+		return nil
 	})
+}
+
+// WithDefaultTLSConfig sets the [Server]'s internal [http.Server.TLSConfig] to
+// the value of [DefaultTLSConfig]. Any provided [TLSOption](s) will be applied
+// to this [tls.Config].
+func WithDefaultTLSConfig(opts ...TLSOption) Option {
+	return WithTLS(DefaultTLSConfig(), opts...)
 }

@@ -95,8 +95,8 @@ func (tc TLSConfig) apply(s *Server) error {
 		return nil
 	}
 
-	s.TLSConfig = DefaultTLSConfig()
-	return tc.ApplyTo(s.TLSConfig)
+	s.httpServer.TLSConfig = DefaultTLSConfig()
+	return tc.ApplyTo(s.httpServer.TLSConfig)
 }
 
 // CertificateLoader loads a [tls.Certificate] from any source.
