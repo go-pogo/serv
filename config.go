@@ -14,18 +14,18 @@ var _ Option = (*Config)(nil)
 type Config struct {
 	// ReadTimeout is the maximum duration for reading the entire request,
 	// including the body.
-	// See http.Server for additional information.
+	// See [http.Server.ReadTimeout] for additional information.
 	ReadTimeout time.Duration `default:"5s"`
 	// ReadHeaderTimeout is the amount of time allowed to read request headers.
-	// See http.Server for additional information.
+	// See [http.Server.ReadHeaderTimeout] for additional information.
 	ReadHeaderTimeout time.Duration `default:"2s"`
 	// WriteTimeout is the maximum duration before timing out writes of the
 	// response.
-	// See http.Server for additional information.
+	// See [http.Server.WriteTimeout] for additional information.
 	WriteTimeout time.Duration `default:"10s"`
 	// IdleTimeout is the maximum amount of time to wait for the next request
 	// when keep-alives are enabled.
-	// See http.Server for additional information.
+	// See [http.Server.IdleTimeout] for additional information.
 	IdleTimeout time.Duration `default:"120s"`
 	// ShutdownTimeout is the maximum duration for shutting down the server and
 	// waiting for all connections to be closed.
@@ -33,7 +33,7 @@ type Config struct {
 	// MaxHeaderBytes controls the maximum number of bytes the server will read
 	// parsing the request header's keys and values, including the request line.
 	// It does not limit the size of the request body.
-	// See http.Server for additional information.
+	// See [http.Server.MaxHeaderBytes] for additional information.
 	MaxHeaderBytes uint64 `default:"10240"` // data.Bytes => 10 KiB
 }
 
@@ -46,16 +46,17 @@ var defaultConfig = Config{
 	MaxHeaderBytes:    10240, // 10 KiB => 10 * data.Kibibyte
 }
 
-// DefaultConfig returns a Config with safe default values.
+// DefaultConfig returns a [Config] with safe default values.
 func DefaultConfig() *Config {
 	c := defaultConfig
 	return &c
 }
 
-// IsZero indicates Config equals its zero value.
+// IsZero indicates [Config] equals its zero value.
 func (cfg *Config) IsZero() bool { return *cfg == Config{} }
 
-// Default sets any zero values on Config to a default non-zero value.
+// Default sets any zero values on [Config] to a default non-zero value similar
+// to [DefaultConfig].
 func (cfg *Config) Default() {
 	if cfg.ReadTimeout == 0 {
 		cfg.ReadTimeout = defaultConfig.ReadTimeout
@@ -77,7 +78,7 @@ func (cfg *Config) Default() {
 	}
 }
 
-// ApplyTo applies the Config fields values to *http.Server s.
+// ApplyTo applies the [Config] fields' values to [http.Server] s.
 func (cfg *Config) ApplyTo(s *http.Server) {
 	if s == nil {
 		return

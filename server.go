@@ -29,19 +29,21 @@ const (
 
 type httpServer = http.Server
 
-// Server is a wrapper for http.Server. The zero value is safe and ready to use,
-// and will apply safe defaults on starting the server.
+// Server is a wrapper for [http.Server]. The zero value is safe and ready to
+// use, and will apply safe defaults on starting the server.
 type Server struct {
 	httpServer
 
-	// Config to apply to the internal http.Server, DefaultConfig() if zero.
+	// Config to apply to the internal [http.Server], [DefaultConfig] if zero.
 	// Changes to Config after starting the server will not be applied.
 	Config Config
 	// Addr optionally specifies the TCP address for the server to listen on.
-	// See net.Dial for details of the address format.
-	// See http.Server for additional information.
+	// Changing Addr after starting the server will not affect the server.
+	// See [net.Dial] for details of the address format.
+	// See [http.Server] for additional information.
 	Addr string
-	// Handler to invoke, DefaultServeMux() if nil.
+	// Handler to invoke, [DefaultServeMux] if nil. Changing Handler after the
+	// server has started will not have any effect.
 	Handler http.Handler
 
 	mut   sync.RWMutex
@@ -50,7 +52,7 @@ type Server struct {
 	state State
 }
 
-// New creates a new Server with a default Config.
+// New creates a new [Server] with a default [Config].
 func New(opts ...Option) (*Server, error) {
 	srv := Server{Config: defaultConfig}
 	if err := srv.with(opts); err != nil {
@@ -59,8 +61,9 @@ func New(opts ...Option) (*Server, error) {
 	return &srv, nil
 }
 
-// With applies additional option to the server. It will return an
-// ErrAlreadyStarted error when the server is already started
+// With applies additional option(s) to the server. It will return an
+// [InvalidStateError] containing a [ErrAlreadyStarted] error when the
+// server has already started.
 func (srv *Server) With(opts ...Option) error {
 	if srv.State() == StateStarted {
 		return errors.New(ErrAlreadyStarted)
@@ -79,7 +82,7 @@ func (srv *Server) with(opts []Option) error {
 	return err
 }
 
-// Name returns an optional provided name of the server. Use WithName to set
+// Name returns an optional provided name of the server. Use [WithName] to set
 // the server's name.
 func (srv *Server) Name() string {
 	srv.mut.RLock()
@@ -87,7 +90,7 @@ func (srv *Server) Name() string {
 	return srv.name
 }
 
-// State returns the current state of the server.
+// State returns the current [State] of the [Server].
 func (srv *Server) State() State {
 	srv.mut.RLock()
 	defer srv.mut.RUnlock()
@@ -139,8 +142,7 @@ func (srv *Server) start() error {
 	return nil
 }
 
-// Serve starts the server by accepting incoming connections on the
-// net.Listener l. See http.Server for additional information.
+// Serve is a wrapper for [http.Server.Serve].
 func (srv *Server) Serve(l net.Listener) error {
 	if err := srv.start(); err != nil {
 		return err
@@ -153,7 +155,7 @@ func (srv *Server) Serve(l net.Listener) error {
 	return err
 }
 
-// ListenAndServe is a wrapper for http.Server.ListenAndServe.
+// ListenAndServe is a wrapper for [http.Server.ListenAndServe].
 func (srv *Server) ListenAndServe() error {
 	if err := srv.start(); err != nil {
 		return err
@@ -166,7 +168,7 @@ func (srv *Server) ListenAndServe() error {
 	return err
 }
 
-// ServeTLS is a wrapper for http.Server.ServeTLS.
+// ServeTLS is a wrapper for [http.Server.ServeTLS].
 func (srv *Server) ServeTLS(l net.Listener, certFile, keyFile string) error {
 	if err := srv.start(); err != nil {
 		return err
@@ -179,7 +181,7 @@ func (srv *Server) ServeTLS(l net.Listener, certFile, keyFile string) error {
 	return err
 }
 
-// ListenAndServeTLS is a wrapper for http.Server.ListenAndServeTLS.
+// ListenAndServeTLS is a wrapper for [http.Server.ListenAndServeTLS].
 func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 	if err := srv.start(); err != nil {
 		return err
@@ -192,10 +194,11 @@ func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 	return err
 }
 
-// Run starts the server and calls either ListenAndServe or ListenAndServeTLS,
-// depending on the provided TLS Option(s).
-// Unlike Serve, ListenAndServe, ServeTLS, and ListenAndServeTLS, Run will not
-// return a http.ErrServerClosed error when the server is closed.
+// Run starts the server and calls either [Server.ListenAndServe] or
+// [Server.ListenAndServeTLS], depending on the provided TLS config/option(s).
+// Unlike [Server.Serve], [Server.ListenAndServe], [Server.ServeTLS], and
+// [Server.ListenAndServeTLS], Run will not return a [http.ErrServerClosed]
+// error when the server is closed.
 func (srv *Server) Run() error {
 	srv.mut.RLock()
 	useTLS := srv.httpServer.TLSConfig != nil &&
@@ -217,13 +220,15 @@ func dismissErrServerClosed(err error) error {
 }
 
 // Shutdown gracefully shuts down the server without interrupting any active
-// connections. Just like the underlying http.Server, Shutdown works by first
+// connections. Just like the underlying [http.Server], Shutdown works by first
 // closing all open listeners, then closing all idle connections, and then
 // waiting indefinitely for connections to return to idle and then shut down.
-// If ShutdownTimeout is set and/or the provided context expires before the
-// shutdown is complete, Shutdown returns the context's error. Otherwise, it
-// returns any error returned from closing the Server's underlying
-// net.Listener(s).
+// If [Config.ShutdownTimeout] is set and/or the provided context expires before
+// the shutdown is complete, Shutdown returns the context's error. Otherwise, it
+// returns any error returned from closing the [Server]'s underlying
+// [net.Listener](s).
+// An [InvalidStateError] containing a [ErrUnableToShutdown] error is returned
+// when the server is not started.
 func (srv *Server) Shutdown(ctx context.Context) error {
 	if state := srv.State(); state == StateClosing {
 		return errors.New(ErrAlreadyClosing)
@@ -251,8 +256,10 @@ func (srv *Server) Shutdown(ctx context.Context) error {
 	return errors.WithStack(srv.httpServer.Shutdown(ctx))
 }
 
-// Close immediately closes all active [net.Listeners] and any connections in
+// Close immediately closes all active [net.Listener](s) and any connections in
 // state [http.StateNew], [http.StateActive], or [http.StateIdle].
+// An [InvalidStateError] containing a [ErrUnableToClose] error is returned
+// when the server is not started.
 // For a graceful shutdown, use [Server.Shutdown].
 func (srv *Server) Close() error {
 	if state := srv.State(); state == StateClosing {

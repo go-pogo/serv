@@ -26,8 +26,8 @@ func ServerName(ctx context.Context) string {
 }
 
 // AddServerName adds the server's name to the request's context. This is done
-// automatically when a name is set using WithName.
-// The server's name can be retrieved using ServerName.
+// automatically when a name is set using [WithName].
+// The server's name can be retrieved using [ServerName].
 func AddServerName(name string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
 		ctx, settings, exists := withCtxValues(req.Context())
@@ -52,7 +52,7 @@ func HandlerName(ctx context.Context) string {
 
 // AddHandlerName adds name as value to the request's context. It should
 // be used on a per route/handler basis.
-// The handler's name can be retrieved using HandlerName.
+// The handler's name can be retrieved using [HandlerName].
 func AddHandlerName(name string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
 		ctx, settings, exists := withCtxValues(req.Context())

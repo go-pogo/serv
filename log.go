@@ -8,6 +8,7 @@ import (
 	"log"
 )
 
+// Logger logs a [Server]'s lifecycle events.
 type Logger interface {
 	ServerStart(name, addr string)
 	ServerShutdown(name string)
@@ -16,6 +17,7 @@ type Logger interface {
 
 const panicNilLogger = "serv.WithLogger: Logger should not be nil"
 
+// WithLogger adds a [Logger] to the [Server].
 func WithLogger(l Logger) Option {
 	if l == nil {
 		panic(panicNilLogger)
@@ -26,10 +28,14 @@ func WithLogger(l Logger) Option {
 	})
 }
 
+// WithDefaultLogger adds a [DefaultLogger] to the [Server].
 func WithDefaultLogger() Option {
 	return WithLogger(&DefaultLogger{log.Default()})
 }
 
+// DefaultLogger is a [Logger] that uses a [log.Logger] to log the [Server]'s.
+// lifecycle events. It defaults to [log.Default] if no [log.Logger] is
+// provided.
 type DefaultLogger struct {
 	*log.Logger
 }
@@ -60,6 +66,7 @@ func (l *DefaultLogger) ServerClose(name string) {
 	l.log(l.name(name) + " closing")
 }
 
+// NopLogger returns a [Logger] that does nothing.
 func NopLogger() Logger { return new(nopLogger) }
 
 type nopLogger struct{}

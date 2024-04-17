@@ -13,12 +13,12 @@ type RouteHandler interface {
 	HandleRoute(route Route)
 }
 
-// RoutesRegisterer registers routes to a RouteHandler.
+// RoutesRegisterer registers routes to a [RouteHandler].
 type RoutesRegisterer interface {
 	RegisterRoutes(r RouteHandler)
 }
 
-// RoutesRegistererFunc registers routes to a RouteHandler.
+// RoutesRegistererFunc registers routes to a [RouteHandler].
 type RoutesRegistererFunc func(r RouteHandler)
 
 func (fn RoutesRegistererFunc) RegisterRoutes(r RouteHandler) { fn(r) }
@@ -32,7 +32,7 @@ type Route struct {
 	Method string
 	// Pattern to access the route.
 	Pattern string
-	// Handler is the http.Handler that handles the route.
+	// Handler is the [http.Handler] that handles the route.
 	Handler http.Handler
 }
 
@@ -45,7 +45,7 @@ func (r Route) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 	AddHandlerName(r.Name, r.Handler).ServeHTTP(wri, req)
 }
 
-// Router is a http.Handler that can handle routes.
+// Router is a [http.Handler] that can handle routes.
 type Router interface {
 	RouteHandler
 	http.Handler
@@ -58,18 +58,20 @@ var (
 
 type serveMux = http.ServeMux
 
-// ServeMux is a http.ServeMux wrapper which implements the Router interface.
-// See http.ServeMux for more information.
+// ServeMux uses an internal embedded [http.ServeMux] to handle routes. It
+// implements the [Router] interface on top of that.
+// See [http.ServeMux] for additional information about pattern syntax,
+// compatibility etc.
 type ServeMux struct{ *serveMux }
 
-// NewServeMux creates a new ServeMux and is ready to be used.
+// NewServeMux creates a new [ServeMux] and is ready to be used.
 func NewServeMux() *ServeMux {
 	return &ServeMux{serveMux: http.NewServeMux()}
 }
 
 var defaultServeMux = ServeMux{serveMux: http.DefaultServeMux}
 
-// DefaultServeMux returns a ServeMux which wraps around http.DefaultServeMux.
+// DefaultServeMux returns a [ServeMux] containing [http.DefaultServeMux].
 func DefaultServeMux() *ServeMux { return &defaultServeMux }
 
 // This variable is used to support backwards compatibility with Go versions
@@ -78,7 +80,8 @@ func DefaultServeMux() *ServeMux { return &defaultServeMux }
 // See https://go.dev/doc/go1.22#enhanced_routing_patterns for additional info.
 var useMethodInRoutePattern bool
 
-// HandleRoute registers a route to the ServeMux using Handle.
+// HandleRoute registers a route to the [ServeMux] using its internal
+// [http.ServeMux.Handle].
 func (mux *ServeMux) HandleRoute(route Route) {
 	pattern := route.Pattern
 	if useMethodInRoutePattern && route.Method != "" {

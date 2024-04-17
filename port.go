@@ -44,8 +44,11 @@ var (
 	_ flag.Value               = (*Port)(nil)
 )
 
+// Port represents a network port.
 type Port uint16
 
+// ParsePort parses string s into a [Port]. A [PortParseError] containing a
+// [PortParseError.Cause] is returned when an error is encountered.
 func ParsePort(s string) (Port, error) {
 	if s == "" {
 		return 0, errors.WithStack(&PortParseError{
@@ -73,9 +76,10 @@ func ParsePort(s string) (Port, error) {
 	return Port(x), nil
 }
 
-// SplitHostPort uses net.SplitHostPort to split a network address of the form
+// SplitHostPort uses [net.SplitHostPort] to split a network address of the form
 // "host:port", "host%zone:port", "[host]:port" or "[host%zone]:port" into host
-// or host%zone and Port.
+// or host%zone and [Port]. A [PortParseError] is returned when an error is
+// encountered.
 func SplitHostPort(hostport string) (string, Port, error) {
 	host, port, err := net.SplitHostPort(hostport)
 	if err != nil {
@@ -92,13 +96,15 @@ func SplitHostPort(hostport string) (string, Port, error) {
 	return host, p, err
 }
 
-// JoinHostPort uses net.JoinHostPort to combine host and port into a network
+// JoinHostPort uses [net.JoinHostPort] to combine host and port into a network
 // address of the form "host:port". If host contains a colon, as found in
-// literal IPv6 addresses, then JoinHostPort returns "[host]:port".
+// literal IPv6 addresses, then [JoinHostPort] returns "[host]:port".
 func JoinHostPort(host string, port Port) string {
 	return net.JoinHostPort(host, port.String())
 }
 
+// Set parses string s into the Port using [ParsePort].
+// This method implements the [flag.Value] interface.
 func (p *Port) Set(s string) (err error) {
 	if s == "" {
 		return nil
@@ -108,6 +114,8 @@ func (p *Port) Set(s string) (err error) {
 	return err
 }
 
+// UnmarshalText unmarshals text into [Port] using [ParsePort].
+// This method implements the [encoding.TextUnmarshaler] interface.
 func (p *Port) UnmarshalText(text []byte) (err error) {
 	if len(text) == 0 {
 		return nil
@@ -117,10 +125,13 @@ func (p *Port) UnmarshalText(text []byte) (err error) {
 	return err
 }
 
+// MarshalText marshals Port into a byte slice using [Port.String].
+// This method implements the [encoding.TextMarshaler] interface.
 func (p Port) MarshalText() ([]byte, error) {
 	return []byte(p.String()), nil
 }
 
+// String returns the port as a formatted string using [strconv.FormatUint].
 func (p Port) String() string {
 	if p == 0 {
 		return ""
@@ -128,6 +139,8 @@ func (p Port) String() string {
 	return strconv.FormatUint(uint64(p), 10)
 }
 
+// Addr returns the port as an address string which can be used as value in
+// [Server.Addr] or [http.Server.Addr].
 func (p Port) Addr() string {
 	if p == 0 {
 		return ""

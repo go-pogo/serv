@@ -20,7 +20,7 @@ type optionFunc func(s *Server) error
 
 func (fn optionFunc) apply(s *Server) error { return fn(s) }
 
-// WithOptions wraps multiple Option(s) into a single Option.
+// WithOptions wraps multiple options into a single [Option].
 func WithOptions(opts ...Option) Option {
 	switch len(opts) {
 	case 0:
@@ -34,6 +34,7 @@ func WithOptions(opts ...Option) Option {
 	}
 }
 
+// WithHandler sets the [Server]'s [Server.Handler] to h.
 func WithHandler(h http.Handler) Option {
 	return optionFunc(func(s *Server) error {
 		s.Handler = h
@@ -43,6 +44,11 @@ func WithHandler(h http.Handler) Option {
 
 const ErrHandlerIsNoRouteHandler errors.Msg = "server handler is not a RouteHandler"
 
+// WithRoutes adds the provided [RoutesRegisterer] to the [Server]'s
+// [Server.Handler]. It will use [DefaultServeMux] as handler when
+// [Server.Handler] is nil.
+// It returns an [ErrHandlerIsNoRouteHandler] error when
+// [Server.Handler] is not a [RouteHandler].
 func WithRoutes(reg ...RoutesRegisterer) Option {
 	return optionFunc(func(s *Server) error {
 		if s.Handler == nil {
@@ -62,7 +68,9 @@ func WithRoutes(reg ...RoutesRegisterer) Option {
 	})
 }
 
-// WithName adds the server's name as value to the request's context.
+// WithName adds the [Server]'s name as value to the [http.Request]'s context
+// by wrapping the [Server.Handler] with [AddServerName]. This is done when the
+// [Server] starts.
 func WithName(name string) Option {
 	return optionFunc(func(s *Server) error {
 		s.name = name
@@ -75,6 +83,8 @@ func BaseContext(ctx context.Context) func(_ net.Listener) context.Context {
 	return func(_ net.Listener) context.Context { return ctx }
 }
 
+// WithBaseContext sets the provided [context.Context] ctx to the [Server]'s
+// internal [http.Server.BaseContext].
 func WithBaseContext(ctx context.Context) Option {
 	return optionFunc(func(s *Server) error {
 		s.httpServer.BaseContext = BaseContext(ctx)
@@ -82,6 +92,11 @@ func WithBaseContext(ctx context.Context) Option {
 	})
 }
 
+const panicNilTLSConfig = "serv.WithTLS: tls.Config should not be nil"
+
+// WithTLS sets the provided [tls.Config] to the [Server]'s internal
+// [http.Server.TLSConfig]. Any provided [TLSOption](s) will be applied to this
+// [tls.Config].
 func WithTLS(conf *tls.Config, opts ...TLSOption) Option {
 	return optionFunc(func(s *Server) error {
 		if conf == nil {

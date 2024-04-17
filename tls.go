@@ -13,10 +13,9 @@ import (
 
 const ErrAppendRootCAFailure errors.Msg = "failed to append certificate to root ca pool"
 
-// DefaultTLSConfig returns a modern preconfigured tls.Config.
+// DefaultTLSConfig returns a modern preconfigured [tls.Config].
 func DefaultTLSConfig() *tls.Config {
 	return &tls.Config{
-		//PreferServerCipherSuites: true,
 		MinVersion: tls.VersionTLS12,
 
 		CurvePreferences: []tls.CurveID{
@@ -45,8 +44,8 @@ var (
 )
 
 type TLSConfig struct {
-	// CACertFile is the path to the root certificate authority file. It is used
-	// to verify the client's (whom connect to the server) certificate.
+	// CACertFile is the path to the root certificate authority file. It is
+	// used to verify the client's (whom connect to the server) certificate.
 	CACertFile string `env:"" flag:"tls-ca"`
 	// CertFile is the path to the server's certificate file.
 	CertFile string `env:"" flag:"tls-cert"`
@@ -56,10 +55,12 @@ type TLSConfig struct {
 	// VerifyClient enables mutual tls authentication.
 	VerifyClient bool `env:""`
 	// InsecureSkipVerify disabled all certificate verification and should only
-	// be used for testing. See tls.Config for additional information.
+	// be used for testing. See [tls.Config.InsecureSkipVerify] for additional
+	// information.
 	InsecureSkipVerify bool `env:""`
 }
 
+// ApplyTo applies the [TLSConfig] fields' values to the provided [tls.Config].
 func (tc TLSConfig) ApplyTo(conf *tls.Config) error {
 	if conf == nil {
 		return nil
@@ -98,12 +99,12 @@ func (tc TLSConfig) apply(s *Server) error {
 	return tc.ApplyTo(s.TLSConfig)
 }
 
-// CertificateLoader loads a tls.Certificate from any source.
+// CertificateLoader loads a [tls.Certificate] from any source.
 type CertificateLoader interface {
 	LoadCertificate() (*tls.Certificate, error)
 }
 
-// GetCertificate can be used in tls.Config to load a certificate when it's
+// GetCertificate can be used in [tls.Config] to load a certificate when it's
 // requested for.
 func GetCertificate(cl CertificateLoader) func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
 	return func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
@@ -126,8 +127,8 @@ type TLSKeyPair struct {
 	KeyFile  string
 }
 
-// LoadCertificate reads and parses the key pair files with tls.LoadX509KeyPair.
-// The files must contain PEM encoded data.
+// LoadCertificate reads and parses the key pair files with
+// [tls.LoadX509KeyPair]. The files must contain PEM encoded data.
 func (kp TLSKeyPair) LoadCertificate() (*tls.Certificate, error) {
 	if kp.CertFile == "" && kp.KeyFile == "" {
 		return nil, nil
@@ -137,6 +138,7 @@ func (kp TLSKeyPair) LoadCertificate() (*tls.Certificate, error) {
 	return &c, errors.WithStack(err)
 }
 
+// ApplyTo adds the [TLSKeyPair] certificates to the provided [tls.Config].
 func (kp TLSKeyPair) ApplyTo(conf *tls.Config) error {
 	if conf == nil {
 		return nil
@@ -165,6 +167,8 @@ type TLSPemBlocks struct {
 	Key  []byte
 }
 
+// LoadCertificate parses the [TLSPemBlocks.Cert] and [TLSPemBlocks.Key] blocks
+// using [tls.X509KeyPair]. The []byte values must contain PEM encoded data.
 func (pb TLSPemBlocks) LoadCertificate() (*tls.Certificate, error) {
 	if len(pb.Cert) == 0 && len(pb.Key) == 0 {
 		return nil, nil
@@ -174,6 +178,7 @@ func (pb TLSPemBlocks) LoadCertificate() (*tls.Certificate, error) {
 	return &c, errors.WithStack(err)
 }
 
+// ApplyTo adds the [TLSPemBlocks] certificates to the provided [tls.Config].
 func (pb TLSPemBlocks) ApplyTo(conf *tls.Config) error {
 	if conf == nil {
 		return nil
