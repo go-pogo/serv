@@ -17,8 +17,13 @@ func WriteJSON(w http.ResponseWriter, v any) error {
 	if v == nil {
 		return nil
 	}
-
-	if err := json.NewEncoder(w).Encode(v); err != nil {
+	if m, ok := v.(json.Marshaler); ok {
+		b, err := m.MarshalJSON()
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		_, _ = w.Write(b)
+	} else if err := json.NewEncoder(w).Encode(v); err != nil {
 		return errors.WithStack(err)
 	}
 
