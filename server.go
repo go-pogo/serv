@@ -6,6 +6,7 @@ package serv
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-pogo/errors"
 	"net"
 	"net/http"
@@ -20,12 +21,42 @@ const (
 	StateClosed
 	StateClosing
 	StateStarted
-
-	ErrAlreadyStarted    errors.Msg = "server has already started"
-	ErrAlreadyClosing    errors.Msg = "server is already closing"
-	ErrUnstartedShutdown errors.Msg = "cannot shutdown server that is not started"
-	ErrUnstartedClose    errors.Msg = "cannot close server that is not started"
 )
+
+func (s State) String() string {
+	switch s {
+	case StateUnstarted:
+		return "unstarted"
+	case StateClosed:
+		return "closed"
+	case StateClosing:
+		return "closing"
+	case StateStarted:
+		return "started"
+	default:
+		panic(fmt.Sprintf("serv: %d is not a valid State", s))
+	}
+}
+
+const (
+	ErrAlreadyStarted   errors.Msg = "server has already started"
+	ErrUnableToStart    errors.Msg = "unable to start server"
+	ErrUnableToShutdown errors.Msg = "unable to shutdown server"
+	ErrUnableToClose    errors.Msg = "unable to close server"
+)
+
+// InvalidStateError is returned when an operation is attempted on a [Server]
+// that is in an invalid state for that operation to succeed.
+type InvalidStateError struct {
+	Err   error
+	State State
+}
+
+func (u InvalidStateError) Unwrap() error { return u.Err }
+
+func (u InvalidStateError) Error() string {
+	return "unexpected state " + u.State.String()
+}
 
 type httpServer = http.Server
 
@@ -65,8 +96,11 @@ func New(opts ...Option) (*Server, error) {
 // [InvalidStateError] containing a [ErrAlreadyStarted] error when the
 // server has already started.
 func (srv *Server) With(opts ...Option) error {
-	if srv.State() == StateStarted {
-		return errors.New(ErrAlreadyStarted)
+	if state := srv.State(); state == StateStarted {
+		return errors.WithStack(&InvalidStateError{
+			Err:   ErrAlreadyStarted,
+			State: state,
+		})
 	}
 
 	srv.mut.Lock()
@@ -101,12 +135,13 @@ func (srv *Server) start() error {
 	srv.mut.Lock()
 	defer srv.mut.Unlock()
 
-	if srv.state == StateStarted {
-		return errors.New(ErrAlreadyStarted)
+	if srv.state == StateStarted || srv.state == StateClosing {
+		return errors.WithStack(&InvalidStateError{
+			Err:   ErrUnableToStart,
+			State: srv.state,
+		})
 	}
-	if srv.state == StateClosing {
-		return errors.New(ErrAlreadyClosing)
-	}
+
 	if srv.state == StateClosed {
 		srv.httpServer = http.Server{
 			DisableGeneralOptionsHandler: srv.httpServer.DisableGeneralOptionsHandler,
@@ -230,10 +265,11 @@ func dismissErrServerClosed(err error) error {
 // An [InvalidStateError] containing a [ErrUnableToShutdown] error is returned
 // when the server is not started.
 func (srv *Server) Shutdown(ctx context.Context) error {
-	if state := srv.State(); state == StateClosing {
-		return errors.New(ErrAlreadyClosing)
-	} else if state != StateStarted {
-		return errors.New(ErrUnstartedShutdown)
+	if state := srv.State(); state != StateStarted {
+		return errors.WithStack(&InvalidStateError{
+			Err:   ErrUnableToShutdown,
+			State: state,
+		})
 	}
 
 	srv.mut.Lock()
@@ -262,10 +298,11 @@ func (srv *Server) Shutdown(ctx context.Context) error {
 // when the server is not started.
 // For a graceful shutdown, use [Server.Shutdown].
 func (srv *Server) Close() error {
-	if state := srv.State(); state == StateClosing {
-		return errors.New(ErrAlreadyClosing)
-	} else if state != StateStarted {
-		return errors.New(ErrUnstartedClose)
+	if state := srv.State(); state != StateStarted {
+		return errors.WithStack(&InvalidStateError{
+			Err:   ErrUnableToClose,
+			State: state,
+		})
 	}
 
 	srv.mut.Lock()
