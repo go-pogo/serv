@@ -31,13 +31,15 @@ func WriteJSON(w http.ResponseWriter, v any) error {
 	return nil
 }
 
+// WriteJSONError encodes error err to JSON and writes it to w.
 func WriteJSONError(w http.ResponseWriter, err error) error {
-	if err == nil {
-		return nil
+	type Error struct {
+		Error string `json:"error"`
+	}
+	if writeErr := WriteJSON(w, Error{err.Error()}); writeErr != nil {
+		return errors.WithStack(writeErr)
 	}
 
 	w.WriteHeader(errors.GetStatusCodeOr(err, http.StatusInternalServerError))
-	return WriteJSON(w, struct {
-		Error string `json:"error"`
-	}{Error: err.Error()})
+	return nil
 }
