@@ -12,6 +12,12 @@ import (
 	"testing"
 )
 
+func TestServerName(t *testing.T) {
+	t.Run("empty value", func(t *testing.T) {
+		assert.Equal(t, "", ServerName(context.Background()))
+	})
+}
+
 func TestAddServerName(t *testing.T) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 	require.NoError(t, err)
@@ -33,6 +39,12 @@ func TestAddServerName(t *testing.T) {
 
 		AddHandlerName("myhandler", AddServerName("foobar", handler)).ServeHTTP(nil, req)
 		assert.Equal(t, "foobar", have)
+	})
+}
+
+func TestHandlerName(t *testing.T) {
+	t.Run("empty value", func(t *testing.T) {
+		assert.Equal(t, "", HandlerName(context.Background()))
 	})
 }
 
