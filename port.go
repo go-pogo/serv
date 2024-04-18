@@ -148,22 +148,22 @@ func (p Port) Addr() string {
 	return ":" + strconv.FormatUint(uint64(p), 10)
 }
 
-func (p Port) apply(s *Server) error {
-	if s.Addr == "" {
-		s.Addr = p.Addr()
+func (p Port) apply(srv *Server) error {
+	if srv.Addr == "" {
+		srv.Addr = p.Addr()
 		return nil
 	}
-	if !strings.ContainsRune(s.Addr, ':') {
-		s.Addr += p.Addr()
+	if !strings.ContainsRune(srv.Addr, ':') {
+		srv.Addr += p.Addr()
 		return nil
 	}
 
-	host, _, err := net.SplitHostPort(s.Addr)
+	host, _, err := net.SplitHostPort(srv.Addr)
 	if err != nil && isMissingPort(err) {
-		host = s.Addr
+		host = srv.Addr
 	}
 
-	s.Addr = host + p.Addr()
+	srv.Addr = host + p.Addr()
 	return nil
 }
 

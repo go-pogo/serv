@@ -90,13 +90,13 @@ func (tc TLSConfig) ApplyTo(conf *tls.Config) error {
 	}.ApplyTo(conf)
 }
 
-func (tc TLSConfig) apply(s *Server) error {
+func (tc TLSConfig) apply(srv *Server) error {
 	if tc.CertFile == "" || tc.KeyFile == "" {
 		return nil
 	}
 
-	s.httpServer.TLSConfig = DefaultTLSConfig()
-	return tc.ApplyTo(s.httpServer.TLSConfig)
+	srv.httpServer.TLSConfig = DefaultTLSConfig()
+	return tc.ApplyTo(srv.httpServer.TLSConfig)
 }
 
 // CertificateLoader loads a [tls.Certificate] from any source.

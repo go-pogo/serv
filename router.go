@@ -90,7 +90,7 @@ func (mux *ServeMux) HandleRoute(route Route) {
 	mux.serveMux.Handle(pattern, route)
 }
 
-func (mux *ServeMux) apply(s *Server) error {
-	s.Handler = mux
+func (mux *ServeMux) apply(srv *Server) error {
+	srv.Handler = mux
 	return nil
 }

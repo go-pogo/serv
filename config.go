@@ -101,7 +101,7 @@ func (cfg *Config) ApplyTo(s *http.Server) {
 	}
 }
 
-func (cfg *Config) apply(s *Server) error {
-	s.Config = *cfg
+func (cfg *Config) apply(srv *Server) error {
+	srv.Config = *cfg
 	return nil
 }

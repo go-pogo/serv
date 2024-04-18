@@ -13,12 +13,12 @@ import (
 )
 
 type Option interface {
-	apply(s *Server) error
+	apply(srv *Server) error
 }
 
-type optionFunc func(s *Server) error
+type optionFunc func(srv *Server) error
 
-func (fn optionFunc) apply(s *Server) error { return fn(s) }
+func (fn optionFunc) apply(srv *Server) error { return fn(srv) }
 
 // WithOptions wraps multiple options into a single [Option].
 func WithOptions(opts ...Option) Option {
@@ -29,7 +29,7 @@ func WithOptions(opts ...Option) Option {
 		return opts[0]
 	default:
 		return optionFunc(func(srv *Server) error {
-			return srv.With(opts...)
+			return srv.with(opts)
 		})
 	}
 }
@@ -50,16 +50,16 @@ const ErrHandlerIsNoRouteHandler errors.Msg = "server handler is not a RouteHand
 // It returns an [ErrHandlerIsNoRouteHandler] error when
 // [Server.Handler] is not a [RouteHandler].
 func WithRoutes(reg ...RoutesRegisterer) Option {
-	return optionFunc(func(s *Server) error {
-		if s.Handler == nil {
+	return optionFunc(func(srv *Server) error {
+		if srv.Handler == nil {
 			mux := DefaultServeMux()
 			for _, rr := range reg {
 				rr.RegisterRoutes(mux)
 			}
-			s.Handler = mux
+			srv.Handler = mux
 			return nil
 		}
-		if r, ok := s.Handler.(RouteHandler); ok {
+		if r, ok := srv.Handler.(RouteHandler); ok {
 			for _, rr := range reg {
 				rr.RegisterRoutes(r)
 			}
@@ -72,8 +72,8 @@ func WithRoutes(reg ...RoutesRegisterer) Option {
 // by wrapping the [Server.Handler] with [AddServerName]. This is done when the
 // [Server] starts.
 func WithName(name string) Option {
-	return optionFunc(func(s *Server) error {
-		s.name = name
+	return optionFunc(func(srv *Server) error {
+		srv.name = name
 		return nil
 	})
 }
@@ -86,8 +86,8 @@ func BaseContext(ctx context.Context) func(_ net.Listener) context.Context {
 // WithBaseContext sets the provided [context.Context] ctx to the [Server]'s
 // internal [http.Server.BaseContext].
 func WithBaseContext(ctx context.Context) Option {
-	return optionFunc(func(s *Server) error {
-		s.httpServer.BaseContext = BaseContext(ctx)
+	return optionFunc(func(srv *Server) error {
+		srv.httpServer.BaseContext = BaseContext(ctx)
 		return nil
 	})
 }
@@ -98,7 +98,7 @@ const panicNilTLSConfig = "serv.WithTLS: tls.Config should not be nil"
 // [http.Server.TLSConfig]. Any provided [TLSOption](s) will be applied to this
 // [tls.Config].
 func WithTLS(conf *tls.Config, opts ...TLSOption) Option {
-	return optionFunc(func(s *Server) error {
+	return optionFunc(func(srv *Server) error {
 		if conf == nil {
 			panic(panicNilTLSConfig)
 		}
@@ -111,7 +111,7 @@ func WithTLS(conf *tls.Config, opts ...TLSOption) Option {
 			return err
 		}
 
-		s.httpServer.TLSConfig = conf
+		srv.httpServer.TLSConfig = conf
 		return nil
 	})
 }
