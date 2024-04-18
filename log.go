@@ -15,59 +15,86 @@ type Logger interface {
 	ServerClose(name string)
 }
 
+type ErrorLoggerProvider interface {
+	ErrorLogger() *log.Logger
+}
+
 const panicNilLogger = "serv.WithLogger: Logger should not be nil"
 
-// WithLogger adds a [Logger] to the [Server].
+// WithLogger adds a [Logger] to the [Server]. It will also set the internal
+// [http.Server.ErrorLog] if [Logger] l also implements [ErrorLoggerProvider].
 func WithLogger(l Logger) Option {
 	if l == nil {
 		panic(panicNilLogger)
 	}
-	return optionFunc(func(s *Server) error {
-		s.log = l
+	return optionFunc(func(srv *Server) error {
+		srv.log = l
+		if srv.httpServer.ErrorLog == nil {
+			if el, ok := l.(ErrorLoggerProvider); ok {
+				srv.httpServer.ErrorLog = el.ErrorLogger()
+			}
+		}
 		return nil
 	})
 }
 
 // WithDefaultLogger adds a [DefaultLogger] to the [Server].
-func WithDefaultLogger() Option {
-	return WithLogger(&DefaultLogger{log.Default()})
+func WithDefaultLogger() Option { return WithLogger(DefaultLogger(nil)) }
+
+const panicNilErrorLogger = "serv.WithErrorLogger: log.Logger should not be nil"
+
+func WithErrorLogger(l *log.Logger) Option {
+	if l == nil {
+		panic(panicNilErrorLogger)
+	}
+	return optionFunc(func(srv *Server) error {
+		srv.httpServer.ErrorLog = l
+		return nil
+	})
 }
 
-// DefaultLogger is a [Logger] that uses a [log.Logger] to log the [Server]'s.
-// lifecycle events. It defaults to [log.Default] if no [log.Logger] is
-// provided.
-type DefaultLogger struct {
+// DefaultLogger returns a [Logger] that uses a [log.Logger] to log the
+// [Server]'s lifecycle events. It defaults to [log.Default] if the provided
+// [log.Logger] l is nil.
+func DefaultLogger(l *log.Logger) Logger {
+	if l == nil {
+		l = log.Default()
+	}
+	return &defaultLogger{l}
+}
+
+// NopLogger returns a [Logger] that does nothing.
+func NopLogger() Logger { return new(nopLogger) }
+
+var (
+	_ Logger              = (*defaultLogger)(nil)
+	_ ErrorLoggerProvider = (*defaultLogger)(nil)
+)
+
+type defaultLogger struct {
 	*log.Logger
 }
 
-func (l *DefaultLogger) log(v string) {
-	if l.Logger == nil {
-		l.Logger = log.Default()
-	}
-	l.Logger.Println(v)
-}
+func (l *defaultLogger) ErrorLogger() *log.Logger { return l.Logger }
 
-func (l *DefaultLogger) name(name string) string {
+func (l *defaultLogger) name(name string) string {
 	if name == "" {
 		return "server"
 	}
 	return "server " + name
 }
 
-func (l *DefaultLogger) ServerStart(name, addr string) {
-	l.log(l.name(name) + " starting on " + addr)
+func (l *defaultLogger) ServerStart(name, addr string) {
+	l.Logger.Println(l.name(name) + " starting on " + addr)
 }
 
-func (l *DefaultLogger) ServerShutdown(name string) {
-	l.log(l.name(name) + " shutting down")
+func (l *defaultLogger) ServerShutdown(name string) {
+	l.Logger.Println(l.name(name) + " shutting down")
 }
 
-func (l *DefaultLogger) ServerClose(name string) {
-	l.log(l.name(name) + " closing")
+func (l *defaultLogger) ServerClose(name string) {
+	l.Logger.Println(l.name(name) + " closing")
 }
-
-// NopLogger returns a [Logger] that does nothing.
-func NopLogger() Logger { return new(nopLogger) }
 
 type nopLogger struct{}
 
