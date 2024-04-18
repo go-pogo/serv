@@ -15,10 +15,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
-// Serv serves a directory of files.
+// This program serves a directory of files.
 
 func main() {
 	var port serv.Port = 80
@@ -32,15 +31,12 @@ func main() {
 		dir = "./"
 	}
 
-	handler := http.FileServer(http.Dir(dir))
-	handler = http.TimeoutHandler(handler, time.Second, "")
-
 	mux := serv.NewServeMux()
 	mux.HandleRoute(serv.Route{
 		Name:    "files",
 		Method:  http.MethodGet,
 		Pattern: "/",
-		Handler: handler,
+		Handler: http.FileServer(http.Dir(dir)),
 	})
 
 	ctx, stopFn := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
