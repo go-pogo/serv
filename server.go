@@ -18,6 +18,7 @@ type State uint32
 
 const (
 	StateUnstarted State = iota
+	StateErrored
 	StateClosed
 	StateClosing
 	StateStarted
@@ -27,8 +28,10 @@ func (s State) String() string {
 	switch s {
 	case StateUnstarted:
 		return "unstarted"
+	case StateErrored:
+		return "errored"
 	case StateClosed:
-		return "closed"
+		return "close"
 	case StateClosing:
 		return "closing"
 	case StateStarted:
@@ -184,7 +187,7 @@ func (srv *Server) Serve(l net.Listener) error {
 	}
 
 	err := srv.httpServer.Serve(l)
-	if !errors.Is(err, http.ErrServerClosed) {
+	if !srv.isClosed(err) {
 		err = errors.WithStack(err)
 	}
 	return err
@@ -197,7 +200,7 @@ func (srv *Server) ListenAndServe() error {
 	}
 
 	err := srv.httpServer.ListenAndServe()
-	if !errors.Is(err, http.ErrServerClosed) {
+	if !srv.isClosed(err) {
 		err = errors.WithStack(err)
 	}
 	return err
@@ -210,7 +213,7 @@ func (srv *Server) ServeTLS(l net.Listener, certFile, keyFile string) error {
 	}
 
 	err := srv.httpServer.ServeTLS(l, certFile, keyFile)
-	if !errors.Is(err, http.ErrServerClosed) {
+	if !srv.isClosed(err) {
 		err = errors.WithStack(err)
 	}
 	return err
@@ -223,10 +226,27 @@ func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 	}
 
 	err := srv.httpServer.ListenAndServeTLS(certFile, keyFile)
-	if !errors.Is(err, http.ErrServerClosed) {
+	if !srv.isClosed(err) {
 		err = errors.WithStack(err)
 	}
 	return err
+}
+
+// isClosed checks if the provided error is http.ErrServerClosed, which
+// indicates the server has been successfully closed. In this case, state is
+// set to StateClosed and isClosed returns true.
+// If an error occurs while starting the internal server, state is set to
+// StateErrored and isClosed returns false.
+func (srv *Server) isClosed(err error) (ok bool) {
+	state := StateErrored
+	if ok = errors.Is(err, http.ErrServerClosed); ok {
+		state = StateClosed
+	}
+
+	srv.mut.Lock()
+	srv.state = state
+	srv.mut.Unlock()
+	return ok
 }
 
 // Run starts the server and calls either [Server.ListenAndServe] or
@@ -241,17 +261,16 @@ func (srv *Server) Run() error {
 			srv.httpServer.TLSConfig.GetCertificate != nil)
 	srv.mut.RUnlock()
 
+	var err error
 	if useTLS {
-		return dismissErrServerClosed(srv.ListenAndServeTLS("", ""))
+		err = srv.ListenAndServeTLS("", "")
+	} else {
+		err = srv.ListenAndServe()
 	}
-	return dismissErrServerClosed(srv.ListenAndServe())
-}
-
-func dismissErrServerClosed(err error) error {
-	if errors.Is(err, http.ErrServerClosed) {
-		return nil
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
 	}
-	return err
+	return nil
 }
 
 // Shutdown gracefully shuts down the server without interrupting any active
@@ -288,7 +307,7 @@ func (srv *Server) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	defer srv.closed()
+	defer srv.close()
 	return errors.WithStack(srv.httpServer.Shutdown(ctx))
 }
 
@@ -310,11 +329,11 @@ func (srv *Server) Close() error {
 	srv.log.ServerClose(srv.name)
 	srv.mut.Unlock()
 
-	defer srv.closed()
+	defer srv.close()
 	return errors.WithStack(srv.httpServer.Close())
 }
 
-func (srv *Server) closed() {
+func (srv *Server) close() {
 	srv.mut.Lock()
 	srv.state = StateClosed
 	srv.mut.Unlock()
