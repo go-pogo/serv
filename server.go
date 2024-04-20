@@ -17,25 +17,35 @@ import (
 type State uint32
 
 const (
+	// StateUnstarted is the default state of a [Server] when it is created.
 	StateUnstarted State = iota
-	StateErrored
-	StateClosed
-	StateClosing
+	// StateStarted indicates the [Server] is (almost) ready to start listening
+	// for incoming connections.
 	StateStarted
+	// StateErrored indicates the [Server] has encountered an error while
+	// listening for incoming connections.
+	StateErrored
+	// StateClosing indicates the [Server] is in the process of closing and
+	// does not accept any incoming connections.
+	StateClosing
+	// StateClosed indicates the [Server] has been completely closed and is no
+	// longer listening for incoming connections.
+	StateClosed
 )
 
 func (s State) String() string {
 	switch s {
 	case StateUnstarted:
 		return "unstarted"
-	case StateErrored:
-		return "errored"
-	case StateClosed:
-		return "close"
-	case StateClosing:
-		return "closing"
 	case StateStarted:
 		return "started"
+	case StateErrored:
+		return "errored"
+	case StateClosing:
+		return "closing"
+	case StateClosed:
+		return "closed"
+
 	default:
 		panic(fmt.Sprintf("serv: %d is not a valid State", s))
 	}
@@ -67,20 +77,23 @@ func (u InvalidStateError) Error() string {
 type httpServer = http.Server
 
 // Server is a wrapper for [http.Server]. The zero value is safe and ready to
-// use, and will apply safe defaults on starting the server.
+// use, and will apply safe defaults on starting the [Server].
 type Server struct {
 	httpServer
 
 	// Config to apply to the internal [http.Server], [DefaultConfig] if zero.
-	// Changes to Config after starting the server will not be applied.
+	// Changes to [Config] after starting the [Server] will not be applied
+	// until after the [Server] is restarted.
 	Config Config
 	// Addr optionally specifies the TCP address for the server to listen on.
-	// Changing Addr after starting the server will not affect the server.
+	// Changing Addr after starting the [Server] will not affect it until after
+	// the [Server] is restarted.
 	// See [net.Dial] for details of the address format.
 	// See [http.Server] for additional information.
 	Addr string
 	// Handler to invoke, [DefaultServeMux] if nil. Changing Handler after the
-	// server has started will not have any effect.
+	// [Server] has started will not have any effect until after the [Server]
+	// is restarted.
 	Handler http.Handler
 
 	mut   sync.RWMutex

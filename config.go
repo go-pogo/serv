@@ -27,12 +27,12 @@ type Config struct {
 	// when keep-alives are enabled.
 	// See [http.Server.IdleTimeout] for additional information.
 	IdleTimeout time.Duration `default:"120s"`
-	// ShutdownTimeout is the maximum duration for shutting down the server and
-	// waiting for all connections to be closed.
+	// ShutdownTimeout is the default maximum duration for shutting down the
+	// [Server] and waiting for all connections to be closed.
 	ShutdownTimeout time.Duration `default:"60s"`
 	// MaxHeaderBytes controls the maximum number of bytes the server will read
-	// parsing the request header's keys and values, including the request line.
-	// It does not limit the size of the request body.
+	// parsing the [http.Request] header's keys and values, including the
+	// request line. It does not limit the size of the request body.
 	// See [http.Server.MaxHeaderBytes] for additional information.
 	MaxHeaderBytes uint64 `default:"10240"` // data.Bytes => 10 KiB
 }
