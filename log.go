@@ -24,10 +24,11 @@ const panicNilLogger = "serv.WithLogger: Logger should not be nil"
 // WithLogger adds a [Logger] to the [Server]. It will also set the internal
 // [http.Server.ErrorLog] if [Logger] l also implements [ErrorLoggerProvider].
 func WithLogger(l Logger) Option {
-	if l == nil {
-		panic(panicNilLogger)
-	}
 	return optionFunc(func(srv *Server) error {
+		if l == nil {
+			panic(panicNilLogger)
+		}
+
 		srv.log = l
 		if srv.httpServer.ErrorLog == nil {
 			if el, ok := l.(ErrorLoggerProvider); ok {
@@ -44,10 +45,11 @@ func WithDefaultLogger() Option { return WithLogger(DefaultLogger(nil)) }
 const panicNilErrorLogger = "serv.WithErrorLogger: log.Logger should not be nil"
 
 func WithErrorLogger(l *log.Logger) Option {
-	if l == nil {
-		panic(panicNilErrorLogger)
-	}
 	return optionFunc(func(srv *Server) error {
+		if l == nil {
+			panic(panicNilErrorLogger)
+		}
+
 		srv.httpServer.ErrorLog = l
 		return nil
 	})

@@ -24,10 +24,28 @@ func TestWithRegisterRoutes(t *testing.T) {
 		assert.NoError(t, WithRegisterRoutes().apply(&srv))
 		assert.NotNil(t, srv.Handler)
 	})
+	t.Run("no routes handler", func(t *testing.T) {
+		srv := Server{Handler: http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})}
+		assert.ErrorIs(t, WithRegisterRoutes().apply(&srv), ErrHandlerIsNoRouteHandler)
+	})
 }
 
 func TestWithName(t *testing.T) {
 	var srv Server
 	assert.NoError(t, WithName("foobar").apply(&srv))
 	assert.Equal(t, "foobar", srv.Name())
+}
+
+func TestWithTLS(t *testing.T) {
+	t.Run("panic on nil", func(t *testing.T) {
+		assert.PanicsWithValue(t, panicNilTLSConfig, func() {
+			WithTLS(nil).apply(&Server{})
+		})
+	})
+}
+
+func TestWithDefaultTLSConfig(t *testing.T) {
+	var srv Server
+	assert.NoError(t, WithDefaultTLSConfig().apply(&srv))
+	assert.Equal(t, DefaultTLSConfig(), srv.TLSConfig)
 }
