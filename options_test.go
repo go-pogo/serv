@@ -18,10 +18,10 @@ func TestWithHandler(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("%v", want), fmt.Sprintf("%v", srv.Handler))
 }
 
-func TestWithRoutes(t *testing.T) {
+func TestWithRegisterRoutes(t *testing.T) {
 	t.Run("nil handler", func(t *testing.T) {
 		var srv Server
-		assert.NoError(t, WithRoutes().apply(&srv))
+		assert.NoError(t, WithRegisterRoutes().apply(&srv))
 		assert.NotNil(t, srv.Handler)
 	})
 }

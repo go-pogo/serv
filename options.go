@@ -44,12 +44,12 @@ func WithHandler(h http.Handler) Option {
 
 const ErrHandlerIsNoRouteHandler errors.Msg = "server handler is not a RouteHandler"
 
-// WithRoutes adds the provided [RoutesRegisterer] to the [Server]'s
-// [Server.Handler]. It will use [DefaultServeMux] as handler when
-// [Server.Handler] is nil.
+// WithRegisterRoutes uses the provided [RoutesRegisterer](s) to add [Route]s
+// to the [Server]'s [Server.Handler]. It will use [DefaultServeMux] as handler
+// when [Server.Handler] is nil.
 // It returns an [ErrHandlerIsNoRouteHandler] error when
 // [Server.Handler] is not a [RouteHandler].
-func WithRoutes(reg ...RoutesRegisterer) Option {
+func WithRegisterRoutes(reg ...RoutesRegisterer) Option {
 	return optionFunc(func(srv *Server) error {
 		if srv.Handler == nil {
 			mux := DefaultServeMux()
