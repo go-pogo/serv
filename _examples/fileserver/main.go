@@ -20,7 +20,7 @@ import (
 // This program serves a directory of files.
 
 func main() {
-	var port serv.Port = 80
+	var port serv.Port = 8080
 
 	cli := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	cli.Var(&port, "port", "Server port")
