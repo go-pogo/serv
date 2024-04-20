@@ -46,6 +46,9 @@ const (
 	ErrUnableToStart    errors.Msg = "unable to start server"
 	ErrUnableToShutdown errors.Msg = "unable to shutdown server"
 	ErrUnableToClose    errors.Msg = "unable to close server"
+
+	ShutdownError errors.Kind = "shutdown error"
+	CloseError    errors.Kind = "close error"
 )
 
 // InvalidStateError is returned when an operation is attempted on a [Server]
@@ -308,7 +311,7 @@ func (srv *Server) Shutdown(ctx context.Context) error {
 	}
 
 	defer srv.close()
-	return errors.WithStack(srv.httpServer.Shutdown(ctx))
+	return errors.WithKind(srv.httpServer.Shutdown(ctx), ShutdownError)
 }
 
 // Close immediately closes all active [net.Listener](s) and any connections in
@@ -330,7 +333,7 @@ func (srv *Server) Close() error {
 	srv.mut.Unlock()
 
 	defer srv.close()
-	return errors.WithStack(srv.httpServer.Close())
+	return errors.WithKind(srv.httpServer.Close(), CloseError)
 }
 
 func (srv *Server) close() {
