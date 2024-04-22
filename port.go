@@ -66,14 +66,14 @@ func ParsePort(s string) (Port, error) {
 		})
 	}
 
-	x, err := strconv.ParseUint(s, 0, 16)
+	p, err := strconv.ParseUint(s, 0, 16)
 	if err != nil {
 		return 0, errors.WithStack(&PortParseError{
-			Cause: ErrMissingPort,
+			Cause: err,
 			Input: s,
 		})
 	}
-	return Port(x), nil
+	return Port(p), nil
 }
 
 // SplitHostPort uses [net.SplitHostPort] to split a network address of the form
