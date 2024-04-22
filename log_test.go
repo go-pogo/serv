@@ -6,13 +6,14 @@ package serv
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestWithLogger(t *testing.T) {
 	t.Run("panic on nil", func(t *testing.T) {
 		assert.PanicsWithValue(t, panicNilLogger, func() {
-			WithLogger(nil).apply(&Server{})
+			require.NoError(t, WithLogger(nil).apply(&Server{}))
 		})
 	})
 

@@ -7,6 +7,7 @@ package serv
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"testing"
 )
@@ -39,7 +40,7 @@ func TestWithName(t *testing.T) {
 func TestWithTLS(t *testing.T) {
 	t.Run("panic on nil", func(t *testing.T) {
 		assert.PanicsWithValue(t, panicNilTLSConfig, func() {
-			WithTLS(nil).apply(&Server{})
+			require.NoError(t, WithTLS(nil).apply(&Server{}))
 		})
 	})
 }
