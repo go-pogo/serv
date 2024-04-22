@@ -21,12 +21,12 @@ func TestWithHandler(t *testing.T) {
 func TestWithRegisterRoutes(t *testing.T) {
 	t.Run("nil handler", func(t *testing.T) {
 		var srv Server
-		assert.NoError(t, WithRegisterRoutes().apply(&srv))
+		assert.NoError(t, WithRoutesRegisterer().apply(&srv))
 		assert.NotNil(t, srv.Handler)
 	})
 	t.Run("no routes handler", func(t *testing.T) {
 		srv := Server{Handler: http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})}
-		assert.ErrorIs(t, WithRegisterRoutes().apply(&srv), ErrHandlerIsNoRouteHandler)
+		assert.ErrorIs(t, WithRoutesRegisterer().apply(&srv), ErrHandlerIsNoRouteHandler)
 	})
 }
 
