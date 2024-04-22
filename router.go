@@ -15,16 +15,25 @@ type RouteHandler interface {
 
 // RoutesRegisterer registers routes to a [RouteHandler].
 type RoutesRegisterer interface {
-	RegisterRoutes(r RouteHandler)
+	RegisterRoutes(rh RouteHandler)
 }
 
 // RoutesRegistererFunc registers routes to a [RouteHandler].
-type RoutesRegistererFunc func(r RouteHandler)
+type RoutesRegistererFunc func(rh RouteHandler)
 
-func (fn RoutesRegistererFunc) RegisterRoutes(r RouteHandler) { fn(r) }
+func (fn RoutesRegistererFunc) RegisterRoutes(rh RouteHandler) { fn(rh) }
+
+// RegisterRoutes registers [Route]s to a [RouteHandler].
+func RegisterRoutes(rh RouteHandler, routes ...Route) {
+	for _, r := range routes {
+		rh.HandleRoute(r)
+	}
+}
 
 var _ http.Handler = (*Route)(nil)
 
+// Route is a [http.Handler] which represents a route that can be registered to
+// a [RouteHandler].
 type Route struct {
 	// Name of the route.
 	Name string
