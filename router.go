@@ -71,7 +71,10 @@ type serveMux = http.ServeMux
 // implements the [Router] interface on top of that.
 // See [http.ServeMux] for additional information about pattern syntax,
 // compatibility etc.
-type ServeMux struct{ *serveMux }
+type ServeMux struct {
+	*serveMux
+	notFound http.Handler
+}
 
 // NewServeMux creates a new [ServeMux] and is ready to be used.
 func NewServeMux() *ServeMux {
@@ -97,6 +100,31 @@ func (mux *ServeMux) HandleRoute(route Route) {
 		pattern = route.Method + " " + pattern
 	}
 	mux.serveMux.Handle(pattern, route)
+}
+
+// WithNotFoundHandler sets a [http.Handler] which is called when there is no
+// matching pattern. If not set, [ServeMux] will use the internal
+// [http.ServeMux]'s default not found handler, which is [http.NotFound].
+func (mux *ServeMux) WithNotFoundHandler(h http.Handler) *ServeMux {
+	mux.notFound = h
+	return mux
+}
+
+func (mux *ServeMux) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
+	if req.RequestURI == "*" {
+		if req.ProtoAtLeast(1, 1) {
+			wri.Header().Set("Connection", "close")
+		}
+		wri.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	h, pattern := mux.serveMux.Handler(req)
+	if pattern != "" || mux.notFound == nil {
+		h.ServeHTTP(wri, req)
+	} else {
+		mux.notFound.ServeHTTP(wri, req)
+	}
 }
 
 func (mux *ServeMux) apply(srv *Server) error {

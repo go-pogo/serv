@@ -44,16 +44,36 @@ func TestRoute_ServeHTTP(t *testing.T) {
 	}
 }
 
-func TestRouter_HandleRoute(t *testing.T) {
-	router := NewServeMux()
-	router.HandleRoute(Route{
+func TestServeMux_HandleRoute(t *testing.T) {
+	mux := NewServeMux()
+	mux.HandleRoute(Route{
 		Pattern: "/",
-		Handler: http.HandlerFunc(func(res http.ResponseWriter, _q *http.Request) {
+		Handler: http.HandlerFunc(func(res http.ResponseWriter, _ *http.Request) {
 			res.WriteHeader(http.StatusOK)
 		}),
 	})
 
 	rec := httptest.NewRecorder()
-	router.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
 	assert.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestServeMux_ServeHTTP(t *testing.T) {
+	t.Run("default not found", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		NewServeMux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+		assert.Equal(t, http.StatusNotFound, rec.Code)
+	})
+
+	t.Run("custom not found", func(t *testing.T) {
+		const want = "my custom not found message"
+		mux := NewServeMux().
+			WithNotFoundHandler(http.HandlerFunc(func(wri http.ResponseWriter, _ *http.Request) {
+				_, _ = wri.Write([]byte(want))
+			}))
+
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+		assert.Equal(t, want, rec.Body.String())
+	})
 }
