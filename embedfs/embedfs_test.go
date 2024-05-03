@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-//go:embed test/*
+//go:embed _test/*
 var embedded embed.FS
 
 func TestNew(t *testing.T) {
@@ -23,7 +23,7 @@ func TestNew(t *testing.T) {
 	require.NoError(t, err)
 
 	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, httptest.NewRequest("GET", "/test/some-file.txt", nil))
+	handler.ServeHTTP(rec, httptest.NewRequest("GET", "/_test/some-file.txt", nil))
 	assert.Equal(t, 200, rec.Code)
 	assert.Equal(t, "some-file.txt", strings.TrimSpace(rec.Body.String()))
 	assert.Equal(t, "", rec.Header().Get("Last-Modified"))
@@ -31,7 +31,7 @@ func TestNew(t *testing.T) {
 
 func TestWithSubDir(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
-		handler, err := New(embedded, WithSubDir("test"))
+		handler, err := New(embedded, WithSubDir("_test"))
 		require.NoError(t, err)
 
 		rec := httptest.NewRecorder()
@@ -59,7 +59,7 @@ func TestWithModTime(t *testing.T) {
 	require.NoError(t, err)
 
 	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, httptest.NewRequest("GET", "/test/some-file.txt", nil))
+	handler.ServeHTTP(rec, httptest.NewRequest("GET", "/_test/some-file.txt", nil))
 	assert.Equal(t, 200, rec.Code)
 	assert.Equal(t, "some-file.txt", strings.TrimSpace(rec.Body.String()))
 	assert.Equal(t, now.UTC().Format(http.TimeFormat), rec.Header().Get("Last-Modified"))
