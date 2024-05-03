@@ -7,6 +7,7 @@ package serv
 import (
 	"context"
 	"crypto/tls"
+	"github.com/go-pogo/easytls"
 	"github.com/go-pogo/errors"
 	"log"
 	"net"
@@ -115,12 +116,12 @@ func WithBaseContext(ctx context.Context) Option {
 	})
 }
 
-const panicNilTLSConfig = "serv.WithTLS: tls.Config should not be nil"
+const panicNilTLSConfig = "serv.WithTLSConfig: tls.Config should not be nil"
 
-// WithTLS sets the provided [tls.Config] to the [Server]'s internal
-// [http.Server.TLSConfig]. Any provided [TLSOption](s) will be applied to this
-// [tls.Config].
-func WithTLS(conf *tls.Config, opts ...TLSOption) Option {
+// WithTLSConfig sets the provided [tls.Config] to the [Server]'s internal
+// [http.Server.TLSConfig]. Any provided [easytls.Option](s) will be applied to
+// this [tls.Config].
+func WithTLSConfig(conf *tls.Config, opts ...easytls.Option) Option {
 	return optionFunc(func(srv *Server) error {
 		if conf == nil {
 			panic(panicNilTLSConfig)
@@ -128,7 +129,7 @@ func WithTLS(conf *tls.Config, opts ...TLSOption) Option {
 
 		var err error
 		for _, opt := range opts {
-			err = errors.Append(err, opt.ApplyTo(conf))
+			err = errors.Append(err, opt.ApplyTo(conf, easytls.TargetServer))
 		}
 		if err != nil {
 			return err
@@ -140,8 +141,8 @@ func WithTLS(conf *tls.Config, opts ...TLSOption) Option {
 }
 
 // WithDefaultTLSConfig sets the [Server]'s internal [http.Server.TLSConfig] to
-// the value of [DefaultTLSConfig]. Any provided [TLSOption](s) will be applied
-// to this [tls.Config].
-func WithDefaultTLSConfig(opts ...TLSOption) Option {
-	return WithTLS(DefaultTLSConfig(), opts...)
+// the value of [easytls.DefaultTLSConfig]. Any provided [easytls.Option](s)
+// will be applied to this [tls.Config].
+func WithDefaultTLSConfig(opts ...easytls.Option) Option {
+	return WithTLSConfig(easytls.DefaultTLSConfig(), opts...)
 }

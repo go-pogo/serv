@@ -6,6 +6,7 @@ package serv
 
 import (
 	"fmt"
+	"github.com/go-pogo/easytls"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
@@ -55,7 +56,7 @@ func TestWithName(t *testing.T) {
 func TestWithTLS(t *testing.T) {
 	t.Run("panic on nil", func(t *testing.T) {
 		assert.PanicsWithValue(t, panicNilTLSConfig, func() {
-			require.NoError(t, WithTLS(nil).apply(&Server{}))
+			require.NoError(t, WithTLSConfig(nil).apply(&Server{}))
 		})
 	})
 }
@@ -63,5 +64,5 @@ func TestWithTLS(t *testing.T) {
 func TestWithDefaultTLSConfig(t *testing.T) {
 	var srv Server
 	assert.NoError(t, WithDefaultTLSConfig().apply(&srv))
-	assert.Equal(t, DefaultTLSConfig(), srv.TLSConfig)
+	assert.Equal(t, easytls.DefaultTLSConfig(), srv.TLSConfig)
 }

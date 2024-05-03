@@ -13,6 +13,5 @@ Included features:
 - [Server] [State] retrieval;
 - [Router]/[ServeMux] with easy (mass) [Route] registration;
 - Set custom "not found" http.Handler on [ServeMux];
-- support for access logging;
-- default TLS configuration.
+- support for access logging.
 */
