@@ -10,30 +10,31 @@ import (
 	"time"
 )
 
-// Details are collected with Middleware and contain additional details of a
+// Details are collected with [Middleware] and contain additional details of a
 // request and it's corresponding response.
 type Details struct {
 	ServerName  string
 	HandlerName string
 	UserAgent   string
 
-	// StatusCode is the first http response code passed to the WriteHeader func
-	// of the ResponseWriter. See httpsnoop.Metrics for additional information.
+	// StatusCode is the first http response code passed to the
+	// [http.ResponseWriter.WriteHeader]. See [httpsnoop.Metrics] for additional
+	// information.
 	StatusCode int
 	// StartTime is the time the request was received.
 	StartTime time.Time
 	// Duration is the time it took to execute the handler.
 	Duration time.Duration
-	// BytesWritten is the number of bytes successfully written by the Write or
-	// ReadFrom function of the ResponseWriter. See httpsnoop.Metrics for
-	// additional information.
+	// BytesWritten is the number of bytes successfully written by the
+	// [http.ResponseWriter.Write] or [http.ResponseWriter.ReadFrom] functions.
+	// See [httpsnoop.Metrics] for additional information.
 	BytesWritten int64
 	// RequestCount is the amount of open requests during the execution of the
 	// handler.
 	RequestCount int64
 }
 
-// RemoteAddr returns a sanitized remote address from the http.Request.
+// RemoteAddr returns a sanitized remote address from the [http.Request].
 func RemoteAddr(r *http.Request) string {
 	addr, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

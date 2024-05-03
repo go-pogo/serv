@@ -11,8 +11,8 @@ import (
 	"net/http"
 )
 
-// Middleware wraps a http.Handler so it's request uri is added to the
-// trace.Span derived from the http.Request's context.
+// Middleware wraps a [http.Handler] so it's request uri is added to the
+// [trace.Span] derived from the [http.Request]'s context.
 // This is a workaround for https://github.com/open-telemetry/opentelemetry-go/commit/7b749591320bfcdef2061f4d4f5aa533ab76b47f
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
@@ -26,8 +26,8 @@ func Middleware(next http.Handler) http.Handler {
 	})
 }
 
-// WithHandlerName adds name as value to the request's context. It should be
-// used on a per route/handler basis.
+// WithHandlerName adds name as value to the [http.Request]'s context. It
+// should be used on a per route/handler basis.
 func WithHandlerName(name string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
 		SetHandlerName(req.Context(), name)

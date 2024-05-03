@@ -19,8 +19,8 @@ type handler struct {
 	traffic int64
 }
 
-// Middleware wraps a http.Handler so it's request and response details are tracked
-// and send to Logger log.
+// Middleware wraps a [http.Handler] so it's request and response details are
+// tracked and send to [Logger] log.
 func Middleware(log Logger, next http.Handler) http.Handler {
 	if log == nil {
 		log = NopLogger()
@@ -59,7 +59,7 @@ func (c *handler) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 
 var _ context.Context = (*noopCtx)(nil)
 
-// An noopCtx is similar to context.Background as it is never canceled and has
+// A noopCtx is similar to context.Background as it is never canceled and has
 // no deadline. However, it does return values from its parent context, when
 // available.
 type noopCtx struct {

@@ -60,7 +60,7 @@ func New(opts ...Option) (*Server, error) {
 	return &srv, nil
 }
 
-// With applies additional option(s) to the server. It will return an
+// With applies additional [Option](s) to the server. It will return an
 // [InvalidStateError] containing a [ErrAlreadyStarted] error when the
 // server has already started.
 func (srv *Server) With(opts ...Option) error {

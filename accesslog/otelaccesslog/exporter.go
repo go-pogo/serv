@@ -20,8 +20,8 @@ type exporter struct {
 }
 
 // NewExporter creates a new otel SpanExporter which, when added to an
-// otel provider, sends accesslog.Details derived from
-// trace.SpanKindServer spans, to the provided accesslog.Logger.
+// otel provider, sends [accesslog.Details] derived from
+// [trace.SpanKindServer] spans, to the provided [accesslog.Logger].
 //
 //	logger := accesslog.DefaultLogger(nil)
 //	tracer := tracesdk.NewTraceProvider(
@@ -33,7 +33,7 @@ func NewExporter(log accesslog.Logger) tracesdk.SpanExporter {
 	}
 }
 
-// ExportSpans exports a batch of trace.SpanKindServer spans. All other kinds
+// ExportSpans exports a batch of [trace.SpanKindServer] spans. All other kinds
 // are ignored.
 func (exp *exporter) ExportSpans(ctx context.Context, spans []tracesdk.ReadOnlySpan) error {
 	for _, span := range spans {
