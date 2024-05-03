@@ -25,7 +25,7 @@ func TestServer_With(t *testing.T) {
 
 	t.Run("started", func(t *testing.T) {
 		var srv Server
-		srv.start()
+		require.NoError(t, srv.start())
 
 		var wantErr *InvalidStateError
 		assert.ErrorAs(t, srv.With(WithName("foobar")), &wantErr)
