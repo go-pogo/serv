@@ -12,6 +12,21 @@ import (
 	"testing"
 )
 
+func TestWithLogger(t *testing.T) {
+	t.Run("panic on nil", func(t *testing.T) {
+		assert.PanicsWithValue(t, panicNilLogger, func() {
+			require.NoError(t, WithLogger(nil).apply(&Server{}))
+		})
+	})
+
+	t.Run("set logger", func(t *testing.T) {
+		var srv Server
+		want := NopLogger()
+		assert.NoError(t, WithLogger(want).apply(&srv))
+		assert.Same(t, want, srv.log)
+	})
+}
+
 func TestWithHandler(t *testing.T) {
 	var srv Server
 	want := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})

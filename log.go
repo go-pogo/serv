@@ -19,46 +19,15 @@ type ErrorLoggerProvider interface {
 	ErrorLogger() *log.Logger
 }
 
-const panicNilLogger = "serv.WithLogger: Logger should not be nil"
-
-// WithLogger adds a [Logger] to the [Server]. It will also set the internal
-// [http.Server.ErrorLog] if [Logger] l also implements [ErrorLoggerProvider].
-func WithLogger(l Logger) Option {
-	return optionFunc(func(srv *Server) error {
-		if l == nil {
-			panic(panicNilLogger)
-		}
-
-		srv.log = l
-		if srv.httpServer.ErrorLog == nil {
-			if el, ok := l.(ErrorLoggerProvider); ok {
-				srv.httpServer.ErrorLog = el.ErrorLogger()
-			}
-		}
-		return nil
-	})
-}
-
-// WithDefaultLogger adds a [DefaultLogger] to the [Server].
-func WithDefaultLogger() Option { return WithLogger(DefaultLogger(nil)) }
-
-const panicNilErrorLogger = "serv.WithErrorLogger: log.Logger should not be nil"
-
-func WithErrorLogger(l *log.Logger) Option {
-	return optionFunc(func(srv *Server) error {
-		if l == nil {
-			panic(panicNilErrorLogger)
-		}
-
-		srv.httpServer.ErrorLog = l
-		return nil
-	})
+type ErrorLogger interface {
+	Logger
+	ErrorLoggerProvider
 }
 
 // DefaultLogger returns a [Logger] that uses a [log.Logger] to log the
 // [Server]'s lifecycle events. It defaults to [log.Default] if the provided
 // [log.Logger] l is nil.
-func DefaultLogger(l *log.Logger) Logger {
+func DefaultLogger(l *log.Logger) ErrorLogger {
 	if l == nil {
 		l = log.Default()
 	}
@@ -68,14 +37,9 @@ func DefaultLogger(l *log.Logger) Logger {
 // NopLogger returns a [Logger] that does nothing.
 func NopLogger() Logger { return new(nopLogger) }
 
-var (
-	_ Logger              = (*defaultLogger)(nil)
-	_ ErrorLoggerProvider = (*defaultLogger)(nil)
-)
+var _ ErrorLogger = (*defaultLogger)(nil)
 
-type defaultLogger struct {
-	*log.Logger
-}
+type defaultLogger struct{ *log.Logger }
 
 func (l *defaultLogger) ErrorLogger() *log.Logger { return l.Logger }
 

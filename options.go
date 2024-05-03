@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/tls"
 	"github.com/go-pogo/errors"
+	"log"
 	"net"
 	"net/http"
 )
@@ -20,18 +21,50 @@ type optionFunc func(srv *Server) error
 
 func (fn optionFunc) apply(srv *Server) error { return fn(srv) }
 
-// WithOptions wraps multiple options into a single [Option].
-func WithOptions(opts ...Option) Option {
-	switch len(opts) {
-	case 0:
+const panicNilLogger = "serv.WithLogger: Logger should not be nil"
+
+// WithLogger adds a [Logger] to the [Server]. It will also set the internal
+// [http.Server.ErrorLog] if [Logger] l also implements [ErrorLoggerProvider].
+func WithLogger(l Logger) Option {
+	return optionFunc(func(srv *Server) error {
+		if l == nil {
+			panic(panicNilLogger)
+		}
+
+		srv.log = l
+		if srv.httpServer.ErrorLog == nil {
+			if el, ok := l.(ErrorLoggerProvider); ok {
+				srv.httpServer.ErrorLog = el.ErrorLogger()
+			}
+		}
 		return nil
-	case 1:
-		return opts[0]
-	default:
-		return optionFunc(func(srv *Server) error {
-			return srv.with(opts)
-		})
-	}
+	})
+}
+
+// WithDefaultLogger adds a [DefaultLogger] to the [Server].
+func WithDefaultLogger() Option { return WithLogger(DefaultLogger(nil)) }
+
+const panicNilErrorLogger = "serv.WithErrorLogger: log.Logger should not be nil"
+
+func WithErrorLogger(l *log.Logger) Option {
+	return optionFunc(func(srv *Server) error {
+		if l == nil {
+			panic(panicNilErrorLogger)
+		}
+
+		srv.httpServer.ErrorLog = l
+		return nil
+	})
+}
+
+// WithName adds the [Server]'s name as value to the [http.Request]'s context
+// by wrapping the [Server.Handler] with [AddServerName]. This is done when the
+// [Server] starts.
+func WithName(name string) Option {
+	return optionFunc(func(srv *Server) error {
+		srv.name = name
+		return nil
+	})
 }
 
 // WithHandler sets the [Server]'s [Server.Handler] to h.
@@ -65,16 +98,6 @@ func WithRoutesRegisterer(reg ...RoutesRegisterer) Option {
 			}
 		}
 		return errors.New(ErrHandlerIsNoRouteHandler)
-	})
-}
-
-// WithName adds the [Server]'s name as value to the [http.Request]'s context
-// by wrapping the [Server.Handler] with [AddServerName]. This is done when the
-// [Server] starts.
-func WithName(name string) Option {
-	return optionFunc(func(srv *Server) error {
-		srv.name = name
-		return nil
 	})
 }
 
