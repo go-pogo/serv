@@ -22,7 +22,16 @@ serv
 [doc-url]: https://pkg.go.dev/github.com/go-pogo/serv
 
 
-Package `serv` contains a server implementation based on `http.Server`, with sane and safe defaults.
+Package `serv` provides a server and router implementation based on the `http`
+package, with a focus on security, flexibility and ease of use.
+
+Included features:
+- `Server` with sane and safe defaults;
+- `Server` `State` retrieval;
+- `Router`/`ServeMux` with easy (mass) `Route` registration;
+- Set custom "not found" `http.Handler` on `ServeMux`;
+- support for access logging;
+- default TLS configuration.
 
 <hr>
 
