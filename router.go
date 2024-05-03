@@ -111,6 +111,12 @@ func (mux *ServeMux) WithNotFoundHandler(h http.Handler) *ServeMux {
 }
 
 func (mux *ServeMux) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
+	if mux.notFound == nil {
+		mux.serveMux.ServeHTTP(wri, req)
+		return
+	}
+
+	// below code is taken from the http.ServeMux.ServeHTTP method
 	if req.RequestURI == "*" {
 		if req.ProtoAtLeast(1, 1) {
 			wri.Header().Set("Connection", "close")
@@ -118,9 +124,9 @@ func (mux *ServeMux) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 		wri.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
-	h, pattern := mux.serveMux.Handler(req)
-	if pattern != "" || mux.notFound == nil {
+	if h, pattern := mux.serveMux.Handler(req); pattern != "" {
+		// a known limitation is that the pattern and matches are not set in the
+		// http.Request, thus http.Request.PathValue won't work as expected
 		h.ServeHTTP(wri, req)
 	} else {
 		mux.notFound.ServeHTTP(wri, req)
