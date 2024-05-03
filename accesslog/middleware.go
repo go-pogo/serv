@@ -57,6 +57,21 @@ func (c *handler) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 	c.log.Log(ctx, det, req.Clone(&noopCtx{ctx}))
 }
 
+type ctxSettingsKey struct{}
+
+type ctxSettings struct {
+	shouldIgnore bool
+}
+
+func withSettings(ctx context.Context) (context.Context, *ctxSettings, bool) {
+	if v := ctx.Value(ctxSettingsKey{}); v != nil {
+		return ctx, v.(*ctxSettings), true
+	}
+
+	v := new(ctxSettings)
+	return context.WithValue(ctx, ctxSettingsKey{}, v), v, false
+}
+
 var _ context.Context = (*noopCtx)(nil)
 
 // A noopCtx is similar to context.Background as it is never canceled and has

@@ -25,9 +25,7 @@ func DefaultLogger(l *log.Logger) Logger {
 
 var _ Logger = (*defaultLogger)(nil)
 
-type defaultLogger struct {
-	*log.Logger
-}
+type defaultLogger struct{ *log.Logger }
 
 func (l *defaultLogger) Log(_ context.Context, det Details, req *http.Request) {
 	handlerName := det.HandlerName

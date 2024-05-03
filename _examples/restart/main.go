@@ -40,7 +40,12 @@ func main() {
 			_, _ = w.Write([]byte(strconv.FormatUint(restartCount.Load(), 10)))
 		}),
 	})
-	mux.HandleRoute(accesslog.IgnoreFaviconRoute())
+	mux.HandleRoute(serv.Route{
+		Name:    "favicon",
+		Method:  http.MethodGet,
+		Pattern: "/favicon.ico",
+		Handler: accesslog.IgnoreHandler(serv.NoContentHandler()),
+	})
 	mux.HandleRoute(serv.Route{
 		Name:    "restart",
 		Pattern: "/restart",
