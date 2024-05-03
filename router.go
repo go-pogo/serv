@@ -86,20 +86,10 @@ var defaultServeMux = ServeMux{serveMux: http.DefaultServeMux}
 // DefaultServeMux returns a [ServeMux] containing [http.DefaultServeMux].
 func DefaultServeMux() *ServeMux { return &defaultServeMux }
 
-// This variable is used to support backwards compatibility with Go versions
-// prior to 1.22. It is true when the project's go.mod sets a go version of at
-// least 1.22.0 and GODEBUG does not contain "httpmuxgo121=1".
-// See https://go.dev/doc/go1.22#enhanced_routing_patterns for additional info.
-var useMethodInRoutePattern bool
-
 // HandleRoute registers a route to the [ServeMux] using its internal
 // [http.ServeMux.Handle].
 func (mux *ServeMux) HandleRoute(route Route) {
-	pattern := route.Pattern
-	if useMethodInRoutePattern && route.Method != "" {
-		pattern = route.Method + " " + pattern
-	}
-	mux.serveMux.Handle(pattern, route)
+	mux.serveMux.Handle(route.Method+" "+route.Pattern, route)
 }
 
 // WithNotFoundHandler sets a [http.Handler] which is called when there is no
