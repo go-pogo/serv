@@ -6,21 +6,25 @@ package serv
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"io"
+	"log"
 	"testing"
 )
 
-func TestWithLogger(t *testing.T) {
-	t.Run("panic on nil", func(t *testing.T) {
-		assert.PanicsWithValue(t, panicNilLogger, func() {
-			require.NoError(t, WithLogger(nil).apply(&Server{}))
-		})
+func TestDefaultLogger(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		l := DefaultLogger(nil)
+		assert.Same(t, log.Default(), l.(*defaultLogger).Logger)
 	})
 
-	t.Run("set logger", func(t *testing.T) {
-		var srv Server
-		want := NopLogger()
-		assert.NoError(t, WithLogger(want).apply(&srv))
-		assert.Same(t, want, srv.log)
+	t.Run("custom logger", func(t *testing.T) {
+		want := log.New(io.Discard, "", 0)
+		l := DefaultLogger(want)
+		assert.Same(t, want, l.(*defaultLogger).Logger)
+	})
+
+	t.Run("ErrorLoggerProvider", func(t *testing.T) {
+		want := log.Default()
+		assert.Same(t, want, DefaultLogger(nil).ErrorLogger())
 	})
 }

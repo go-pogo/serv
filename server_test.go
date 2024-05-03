@@ -17,6 +17,23 @@ func TestNew(t *testing.T) {
 	assert.Equal(t, *DefaultConfig(), have.Config)
 }
 
+func TestServer_With(t *testing.T) {
+	t.Run("nil option", func(t *testing.T) {
+		var srv Server
+		assert.NoError(t, srv.With(nil))
+	})
+
+	t.Run("started", func(t *testing.T) {
+		var srv Server
+		srv.start()
+
+		var wantErr *InvalidStateError
+		assert.ErrorAs(t, srv.With(WithName("foobar")), &wantErr)
+		assert.Equal(t, ErrAlreadyStarted, wantErr.Unwrap())
+		assert.Equal(t, StateStarted, wantErr.State)
+	})
+}
+
 func TestServer_State(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		var srv Server

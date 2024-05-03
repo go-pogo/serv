@@ -79,6 +79,9 @@ func (srv *Server) With(opts ...Option) error {
 func (srv *Server) with(opts []Option) error {
 	var err error
 	for _, opt := range opts {
+		if opt == nil {
+			continue
+		}
 		err = errors.Append(err, opt.apply(srv))
 	}
 	return err

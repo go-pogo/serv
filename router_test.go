@@ -44,6 +44,15 @@ func TestRoute_ServeHTTP(t *testing.T) {
 	}
 }
 
+func TestServeMux(t *testing.T) {
+	t.Run("apply to server", func(t *testing.T) {
+		var srv Server
+		var mux ServeMux
+		assert.NoError(t, srv.With(&mux))
+		assert.Same(t, &mux, srv.Handler)
+	})
+}
+
 func TestServeMux_HandleRoute(t *testing.T) {
 	mux := NewServeMux()
 	mux.HandleRoute(Route{
