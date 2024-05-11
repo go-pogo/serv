@@ -11,6 +11,7 @@ import (
 // Logger logs a [Server]'s lifecycle events.
 type Logger interface {
 	ServerStart(name, addr string)
+	ServerStartTLS(name, addr, certFile, keyFile string)
 	ServerShutdown(name string)
 	ServerClose(name string)
 }
@@ -37,8 +38,6 @@ func DefaultLogger(l *log.Logger) ErrorLogger {
 // NopLogger returns a [Logger] that does nothing.
 func NopLogger() Logger { return new(nopLogger) }
 
-var _ ErrorLogger = (*defaultLogger)(nil)
-
 type defaultLogger struct{ *log.Logger }
 
 func (l *defaultLogger) ErrorLogger() *log.Logger { return l.Logger }
@@ -54,6 +53,20 @@ func (l *defaultLogger) ServerStart(name, addr string) {
 	l.Logger.Println(l.name(name) + " starting on " + addr)
 }
 
+func (l *defaultLogger) ServerStartTLS(name, addr, certFile, keyFile string) {
+	if certFile == "" || keyFile == "" {
+		l.Logger.Println(l.name(name) + " starting on " + addr + " using TLS")
+	} else {
+		l.Logger.Printf(
+			"%s starting on %s using TLS with cert file %s and key file %s\n",
+			l.name(name),
+			addr,
+			certFile,
+			keyFile,
+		)
+	}
+}
+
 func (l *defaultLogger) ServerShutdown(name string) {
 	l.Logger.Println(l.name(name) + " shutting down")
 }
@@ -64,6 +77,7 @@ func (l *defaultLogger) ServerClose(name string) {
 
 type nopLogger struct{}
 
-func (*nopLogger) ServerStart(_, _ string) {}
-func (*nopLogger) ServerShutdown(string)   {}
-func (*nopLogger) ServerClose(string)      {}
+func (*nopLogger) ServerStart(_, _ string)          {}
+func (*nopLogger) ServerStartTLS(_, _, _, _ string) {}
+func (*nopLogger) ServerShutdown(string)            {}
+func (*nopLogger) ServerClose(string)               {}

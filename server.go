@@ -144,7 +144,6 @@ func (srv *Server) start() error {
 	srv.httpServer.Handler = handler
 
 	srv.state = StateStarted
-	srv.log.ServerStart(srv.name, srv.Addr)
 	return nil
 }
 
@@ -154,6 +153,7 @@ func (srv *Server) Serve(l net.Listener) error {
 		return err
 	}
 
+	srv.log.ServerStart(srv.name, srv.Addr)
 	err := srv.httpServer.Serve(l)
 	if !srv.isClosed(err) {
 		err = errors.WithStack(err)
@@ -167,6 +167,7 @@ func (srv *Server) ListenAndServe() error {
 		return err
 	}
 
+	srv.log.ServerStart(srv.name, srv.Addr)
 	err := srv.httpServer.ListenAndServe()
 	if !srv.isClosed(err) {
 		err = errors.WithStack(err)
@@ -180,6 +181,7 @@ func (srv *Server) ServeTLS(l net.Listener, certFile, keyFile string) error {
 		return err
 	}
 
+	srv.log.ServerStartTLS(srv.name, srv.Addr, certFile, keyFile)
 	err := srv.httpServer.ServeTLS(l, certFile, keyFile)
 	if !srv.isClosed(err) {
 		err = errors.WithStack(err)
@@ -193,6 +195,7 @@ func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 		return err
 	}
 
+	srv.log.ServerStartTLS(srv.name, srv.Addr, certFile, keyFile)
 	err := srv.httpServer.ListenAndServeTLS(certFile, keyFile)
 	if !srv.isClosed(err) {
 		err = errors.WithStack(err)
