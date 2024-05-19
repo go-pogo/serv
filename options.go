@@ -8,7 +8,6 @@ import (
 	"context"
 	"crypto/tls"
 	"github.com/go-pogo/easytls"
-	"github.com/go-pogo/easytls/certgen"
 	"github.com/go-pogo/errors"
 	"log"
 	"net"
@@ -142,23 +141,4 @@ func WithTLSConfig(conf *tls.Config, opts ...easytls.Option) Option {
 // will be applied to this [tls.Config].
 func WithDefaultTLSConfig(opts ...easytls.Option) Option {
 	return WithTLSConfig(easytls.DefaultTLSConfig(), opts...)
-}
-
-// WithSelfSignedTLS sets the [Server]'s internal [http.Server.TLSConfig] to
-// the value of [easytls.DefaultTLSConfig] and provides it with self-signed
-// TLS certificates.
-func WithSelfSignedTLS() Option {
-	return optionFunc(func(srv *Server) error {
-		gen, err := certgen.New()
-		if err != nil {
-			return err
-		}
-		if srv.name != "" {
-			gen.Template.Subject.OrganizationalUnit = []string{srv.name}
-		}
-		if srv.httpServer.TLSConfig == nil {
-			srv.httpServer.TLSConfig = easytls.DefaultTLSConfig()
-		}
-		return gen.ApplyTo(srv.httpServer.TLSConfig, easytls.TargetServer)
-	})
 }
