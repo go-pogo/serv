@@ -27,6 +27,8 @@ type exporter struct {
 //	tracer := tracesdk.NewTraceProvider(
 //		tracesdk.WithBatcher(otelaccesslog.NewExporter(logger)),
 //	)
+//
+// Deprecated: Will be removed in next version.
 func NewExporter(log accesslog.Logger) tracesdk.SpanExporter {
 	return &exporter{
 		log: log,
@@ -35,6 +37,7 @@ func NewExporter(log accesslog.Logger) tracesdk.SpanExporter {
 
 // ExportSpans exports a batch of [trace.SpanKindServer] spans. All other kinds
 // are ignored.
+// Deprecated: Will be removed in next version.
 func (exp *exporter) ExportSpans(ctx context.Context, spans []tracesdk.ReadOnlySpan) error {
 	for _, span := range spans {
 		if span.SpanKind() != trace.SpanKindServer {
@@ -87,4 +90,5 @@ func (exp *exporter) ExportSpans(ctx context.Context, spans []tracesdk.ReadOnlyS
 }
 
 // Shutdown does nothing.
+// Deprecated: Will be removed in next version.
 func (*exporter) Shutdown(context.Context) error { return nil }

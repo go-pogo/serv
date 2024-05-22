@@ -14,6 +14,7 @@ import (
 // Middleware wraps a [http.Handler] so it's request uri is added to the
 // [trace.Span] derived from the [http.Request]'s context.
 // This is a workaround for https://github.com/open-telemetry/opentelemetry-go/commit/7b749591320bfcdef2061f4d4f5aa533ab76b47f
+// Deprecated: Will be removed in next version.
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
 		trace.SpanFromContext(req.Context()).SetAttributes(
@@ -28,6 +29,7 @@ func Middleware(next http.Handler) http.Handler {
 
 // WithHandlerName adds name as value to the [http.Request]'s context. It
 // should be used on a per route/handler basis.
+// Deprecated: Will be removed in next version.
 func WithHandlerName(name string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
 		SetHandlerName(req.Context(), name)
@@ -35,6 +37,8 @@ func WithHandlerName(name string, next http.Handler) http.Handler {
 	})
 }
 
+// SetHandlerName
+// Deprecated: Will be removed in next version.
 func SetHandlerName(ctx context.Context, name string) {
 	if span := trace.SpanFromContext(ctx); span.IsRecording() {
 		span.SetAttributes(semconv.CodeFunctionKey.String(name))
