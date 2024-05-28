@@ -18,7 +18,7 @@ const TimeLayout string = "02/Jan/2006:15:04:05 -0700"
 // https://httpd.apache.org/docs/current/logs.html#common
 type CommonLogger struct{ io.Writer }
 
-func (l *CommonLogger) Log(_ context.Context, det accesslog.Details, req *http.Request) {
+func (l *CommonLogger) LogAccess(_ context.Context, det accesslog.Details, req *http.Request) {
 	if l.Writer == nil {
 		l.Writer = os.Stdout
 	}

@@ -10,10 +10,10 @@ import (
 
 // Logger logs a [Server]'s lifecycle events.
 type Logger interface {
-	ServerStart(name, addr string)
-	ServerStartTLS(name, addr, certFile, keyFile string)
-	ServerShutdown(name string)
-	ServerClose(name string)
+	LogServerStart(name, addr string)
+	LogServerStartTLS(name, addr, certFile, keyFile string)
+	LogServerShutdown(name string)
+	LogServerClose(name string)
 }
 
 type ErrorLoggerProvider interface {
@@ -49,11 +49,11 @@ func (l *defaultLogger) name(name string) string {
 	return "server " + name
 }
 
-func (l *defaultLogger) ServerStart(name, addr string) {
+func (l *defaultLogger) LogServerStart(name, addr string) {
 	l.Logger.Println(l.name(name) + " starting on " + addr)
 }
 
-func (l *defaultLogger) ServerStartTLS(name, addr, certFile, keyFile string) {
+func (l *defaultLogger) LogServerStartTLS(name, addr, certFile, keyFile string) {
 	if certFile == "" || keyFile == "" {
 		l.Logger.Println(l.name(name) + " starting on " + addr + " using TLS")
 	} else {
@@ -67,17 +67,17 @@ func (l *defaultLogger) ServerStartTLS(name, addr, certFile, keyFile string) {
 	}
 }
 
-func (l *defaultLogger) ServerShutdown(name string) {
+func (l *defaultLogger) LogServerShutdown(name string) {
 	l.Logger.Println(l.name(name) + " shutting down")
 }
 
-func (l *defaultLogger) ServerClose(name string) {
+func (l *defaultLogger) LogServerClose(name string) {
 	l.Logger.Println(l.name(name) + " closing")
 }
 
 type nopLogger struct{}
 
-func (*nopLogger) ServerStart(_, _ string)          {}
-func (*nopLogger) ServerStartTLS(_, _, _, _ string) {}
-func (*nopLogger) ServerShutdown(string)            {}
-func (*nopLogger) ServerClose(string)               {}
+func (*nopLogger) LogServerStart(_, _ string)          {}
+func (*nopLogger) LogServerStartTLS(_, _, _, _ string) {}
+func (*nopLogger) LogServerShutdown(string)            {}
+func (*nopLogger) LogServerClose(string)               {}

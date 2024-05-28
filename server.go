@@ -153,7 +153,7 @@ func (srv *Server) Serve(l net.Listener) error {
 		return err
 	}
 
-	srv.log.ServerStart(srv.name, srv.Addr)
+	srv.log.LogServerStart(srv.name, srv.Addr)
 	err := srv.httpServer.Serve(l)
 	if !srv.isClosed(err) {
 		err = errors.WithStack(err)
@@ -167,7 +167,7 @@ func (srv *Server) ListenAndServe() error {
 		return err
 	}
 
-	srv.log.ServerStart(srv.name, srv.Addr)
+	srv.log.LogServerStart(srv.name, srv.Addr)
 	err := srv.httpServer.ListenAndServe()
 	if !srv.isClosed(err) {
 		err = errors.WithStack(err)
@@ -181,7 +181,7 @@ func (srv *Server) ServeTLS(l net.Listener, certFile, keyFile string) error {
 		return err
 	}
 
-	srv.log.ServerStartTLS(srv.name, srv.Addr, certFile, keyFile)
+	srv.log.LogServerStartTLS(srv.name, srv.Addr, certFile, keyFile)
 	err := srv.httpServer.ServeTLS(l, certFile, keyFile)
 	if !srv.isClosed(err) {
 		err = errors.WithStack(err)
@@ -195,7 +195,7 @@ func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 		return err
 	}
 
-	srv.log.ServerStartTLS(srv.name, srv.Addr, certFile, keyFile)
+	srv.log.LogServerStartTLS(srv.name, srv.Addr, certFile, keyFile)
 	err := srv.httpServer.ListenAndServeTLS(certFile, keyFile)
 	if !srv.isClosed(err) {
 		err = errors.WithStack(err)
@@ -264,7 +264,7 @@ func (srv *Server) Shutdown(ctx context.Context) error {
 
 	srv.mut.Lock()
 	srv.state = StateClosing
-	srv.log.ServerShutdown(srv.name)
+	srv.log.LogServerShutdown(srv.name)
 	srv.httpServer.SetKeepAlivesEnabled(false)
 	shutdownTimeout := srv.Config.ShutdownTimeout
 	srv.mut.Unlock()
@@ -297,7 +297,7 @@ func (srv *Server) Close() error {
 
 	srv.mut.Lock()
 	srv.state = StateClosing
-	srv.log.ServerClose(srv.name)
+	srv.log.LogServerClose(srv.name)
 	srv.mut.Unlock()
 
 	defer srv.close()

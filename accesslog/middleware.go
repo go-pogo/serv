@@ -54,7 +54,7 @@ func (c *handler) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 	det.HandlerName = serv.HandlerName(ctx)
 	det.UserAgent = req.UserAgent()
 
-	c.log.Log(ctx, det, req.Clone(&noopCtx{ctx}))
+	c.log.LogAccess(ctx, det, req.Clone(&noopCtx{ctx}))
 }
 
 type ctxSettingsKey struct{}

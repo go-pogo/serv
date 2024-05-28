@@ -84,7 +84,7 @@ func (exp *exporter) ExportSpans(ctx context.Context, spans []tracesdk.ReadOnlyS
 		det.StartTime = span.StartTime()
 		det.Duration = span.EndTime().Sub(span.StartTime())
 
-		exp.log.Log(ctx, det, req)
+		exp.log.LogAccess(ctx, det, req)
 	}
 	return nil
 }

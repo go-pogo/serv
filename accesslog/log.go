@@ -13,7 +13,7 @@ import (
 const Message string = "access request"
 
 type Logger interface {
-	Log(ctx context.Context, det Details, req *http.Request)
+	LogAccess(ctx context.Context, det Details, req *http.Request)
 }
 
 func DefaultLogger(l *log.Logger) Logger {
@@ -27,7 +27,7 @@ var _ Logger = (*defaultLogger)(nil)
 
 type defaultLogger struct{ *log.Logger }
 
-func (l *defaultLogger) Log(_ context.Context, det Details, req *http.Request) {
+func (l *defaultLogger) LogAccess(_ context.Context, det Details, req *http.Request) {
 	handlerName := det.HandlerName
 	if handlerName == "" {
 		handlerName = "-"
@@ -50,9 +50,11 @@ type nopLogger struct{}
 
 func NopLogger() Logger { return new(nopLogger) }
 
-func (*nopLogger) Log(context.Context, Details, *http.Request) {}
+func (*nopLogger) LogAccess(context.Context, Details, *http.Request) {}
 
 // loggerFunc acts as middleware wrapper for Logger
 type loggerFunc func(ctx context.Context, det Details, req *http.Request)
 
-func (fn loggerFunc) Log(ctx context.Context, det Details, req *http.Request) { fn(ctx, det, req) }
+func (fn loggerFunc) LogAccess(ctx context.Context, det Details, req *http.Request) {
+	fn(ctx, det, req)
+}

@@ -42,7 +42,7 @@ func LimitCodes(rs ResponseStatus, next Logger) Logger {
 	}
 	return loggerFunc(func(ctx context.Context, det Details, req *http.Request) {
 		if rs.InRange(det.StatusCode) {
-			next.Log(ctx, det, req)
+			next.LogAccess(ctx, det, req)
 		}
 	})
 }
