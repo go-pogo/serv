@@ -55,5 +55,5 @@ type InvalidStateError struct {
 func (u InvalidStateError) Unwrap() error { return u.Err }
 
 func (u InvalidStateError) Error() string {
-	return "unexpected state " + u.State.String()
+	return "unexpected state: " + u.State.String()
 }
