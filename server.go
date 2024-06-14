@@ -18,9 +18,8 @@ const (
 	ErrUnableToStart    errors.Msg = "unable to start server"
 	ErrUnableToShutdown errors.Msg = "unable to shutdown server"
 	ErrUnableToClose    errors.Msg = "unable to close server"
-
-	ShutdownError errors.Kind = "shutdown error"
-	CloseError    errors.Kind = "close error"
+	ErrServerShutdown   errors.Msg = "error during server shutdown"
+	ErrServerClose      errors.Msg = "error during closing server"
 )
 
 type httpServer = http.Server
@@ -279,7 +278,7 @@ func (srv *Server) Shutdown(ctx context.Context) error {
 	}
 
 	defer srv.close()
-	return errors.WithKind(srv.httpServer.Shutdown(ctx), ShutdownError)
+	return errors.Wrap(srv.httpServer.Shutdown(ctx), ErrServerShutdown)
 }
 
 // Close immediately closes all active [net.Listener](s) and any connections in
@@ -301,7 +300,7 @@ func (srv *Server) Close() error {
 	srv.mut.Unlock()
 
 	defer srv.close()
-	return errors.WithKind(srv.httpServer.Close(), CloseError)
+	return errors.Wrap(srv.httpServer.Close(), ErrServerClose)
 }
 
 func (srv *Server) close() {
