@@ -4,7 +4,9 @@
 
 package serv
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // NoContent replies to the request with an HTTP 204 "no content" status code.
 func NoContent(w http.ResponseWriter, _ *http.Request) {

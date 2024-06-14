@@ -7,14 +7,15 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/go-pogo/errors"
-	"github.com/go-pogo/serv"
-	"github.com/go-pogo/serv/accesslog"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/go-pogo/errors"
+	"github.com/go-pogo/serv"
+	"github.com/go-pogo/serv/accesslog"
 )
 
 // This program serves a directory of files.

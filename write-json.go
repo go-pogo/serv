@@ -6,8 +6,9 @@ package serv
 
 import (
 	"encoding/json"
-	"github.com/go-pogo/errors"
 	"net/http"
+
+	"github.com/go-pogo/errors"
 )
 
 const contentTypeJSON = "application/json"

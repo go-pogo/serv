@@ -5,13 +5,14 @@
 package serv
 
 import (
-	"github.com/go-pogo/rawconv"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/go-pogo/rawconv"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConfig(t *testing.T) {

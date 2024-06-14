@@ -6,11 +6,12 @@ package serv
 
 import (
 	"context"
-	"github.com/go-pogo/errors"
 	"net"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/go-pogo/errors"
 )
 
 const (

@@ -6,11 +6,12 @@ package serv
 
 import (
 	"fmt"
+	"net/http"
+	"testing"
+
 	"github.com/go-pogo/easytls"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"testing"
 )
 
 func TestWithLogger(t *testing.T) {

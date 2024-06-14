@@ -7,10 +7,11 @@ package clflogger
 import (
 	"context"
 	"fmt"
-	"github.com/go-pogo/serv/accesslog"
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/go-pogo/serv/accesslog"
 )
 
 const TimeLayout string = "02/Jan/2006:15:04:05 -0700"

@@ -7,11 +7,12 @@ package serv
 import (
 	"context"
 	"crypto/tls"
-	"github.com/go-pogo/easytls"
-	"github.com/go-pogo/errors"
 	"log"
 	"net"
 	"net/http"
+
+	"github.com/go-pogo/easytls"
+	"github.com/go-pogo/errors"
 )
 
 type Option interface {

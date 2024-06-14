@@ -5,10 +5,11 @@
 package embedfs
 
 import (
-	"github.com/go-pogo/errors"
 	"io/fs"
 	"net/http"
 	"time"
+
+	"github.com/go-pogo/errors"
 )
 
 const ErrInvalidSubDir errors.Msg = "invalid sub directory"

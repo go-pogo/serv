@@ -6,9 +6,10 @@ package serv
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleParsePort() {

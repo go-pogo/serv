@@ -19,7 +19,7 @@ func ShouldIgnore(ctx context.Context) bool {
 }
 
 // SetShouldIgnore marks the context from a [http.Request] as "should ignore".
-// It return true if the context was successfully updated. If the context
+// It returns true if the context was successfully updated. If the context
 // does not already contain a reference to
 func SetShouldIgnore(ctx context.Context, ignore bool) bool {
 	if _, settings, exists := withSettings(ctx); exists {

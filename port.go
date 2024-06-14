@@ -8,10 +8,11 @@ import (
 	"encoding"
 	"flag"
 	"fmt"
-	"github.com/go-pogo/errors"
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/go-pogo/errors"
 )
 
 const (

@@ -7,9 +7,6 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/go-pogo/errors"
-	"github.com/go-pogo/serv"
-	"github.com/go-pogo/serv/accesslog"
 	"log"
 	"net/http"
 	"os"
@@ -17,6 +14,10 @@ import (
 	"strconv"
 	"sync/atomic"
 	"syscall"
+
+	"github.com/go-pogo/errors"
+	"github.com/go-pogo/serv"
+	"github.com/go-pogo/serv/accesslog"
 )
 
 // This program restarts the server after the "/restart" url is visited.

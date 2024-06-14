@@ -5,9 +5,10 @@
 package serv
 
 import (
-	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestWriteJSON(t *testing.T) {

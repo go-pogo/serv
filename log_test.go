@@ -5,10 +5,11 @@
 package serv
 
 import (
-	"github.com/stretchr/testify/assert"
 	"io"
 	"log"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultLogger(t *testing.T) {

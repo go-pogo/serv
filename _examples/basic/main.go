@@ -7,13 +7,14 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/go-pogo/errors"
-	"github.com/go-pogo/serv"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/go-pogo/errors"
+	"github.com/go-pogo/serv"
 )
 
 // This program starts and runs a basic server which will shutdown after

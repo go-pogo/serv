@@ -6,11 +6,12 @@ package accesslog
 
 import (
 	"context"
-	"github.com/felixge/httpsnoop"
-	"github.com/go-pogo/serv"
 	"net/http"
 	"sync/atomic"
 	"time"
+
+	"github.com/felixge/httpsnoop"
+	"github.com/go-pogo/serv"
 )
 
 type handler struct {
