@@ -2,10 +2,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package serv
+package accesslog
 
 import (
-	"io"
 	"log"
 	"testing"
 
@@ -15,17 +14,6 @@ import (
 func TestNewLogger(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		assert.PanicsWithValue(t, panicNilLog, func() { _ = NewLogger(nil) })
-	})
-
-	t.Run("custom logger", func(t *testing.T) {
-		want := log.New(io.Discard, "", 0)
-		l := NewLogger(want)
-		assert.Same(t, want, l.(*defaultLogger).Logger)
-	})
-
-	t.Run("ErrorLoggerProvider", func(t *testing.T) {
-		want := log.Default()
-		assert.Same(t, want, NewLogger(want).ErrorLogger())
 	})
 }
 

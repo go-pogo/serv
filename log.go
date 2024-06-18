@@ -25,18 +25,20 @@ type ErrorLogger interface {
 	ErrorLoggerProvider
 }
 
-// DefaultLogger returns a [Logger] that uses a [log.Logger] to log the
-// [Server]'s lifecycle events. It defaults to [log.Default] if the provided
-// [log.Logger] l is nil.
-func DefaultLogger(l *log.Logger) ErrorLogger {
+const panicNilLog = "serv.NewLogger: log.Logger should not be nil"
+
+// NewLogger returns an [ErrorLogger] that uses a [log.Logger] to log the
+// [Server]'s lifecycle events.
+func NewLogger(l *log.Logger) ErrorLogger {
 	if l == nil {
-		l = log.Default()
+		panic(panicNilLog)
 	}
 	return &defaultLogger{l}
 }
 
-// NopLogger returns a [Logger] that does nothing.
-func NopLogger() Logger { return new(nopLogger) }
+// DefaultLogger returns an [ErrorLogger] that uses [log.Default] to log the
+// [Server]'s lifecycle events.
+func DefaultLogger() ErrorLogger { return &defaultLogger{log.Default()} }
 
 type defaultLogger struct{ *log.Logger }
 
@@ -74,6 +76,9 @@ func (l *defaultLogger) LogServerShutdown(name string) {
 func (l *defaultLogger) LogServerClose(name string) {
 	l.Logger.Println(l.name(name) + " closing")
 }
+
+// NopLogger returns a [Logger] that does nothing.
+func NopLogger() Logger { return new(nopLogger) }
 
 type nopLogger struct{}
 

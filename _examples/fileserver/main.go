@@ -45,7 +45,7 @@ func main() {
 		serv.WithName("fileserver"),
 		serv.WithBaseContext(ctx),
 		serv.WithDefaultLogger(),
-		serv.WithHandler(accesslog.Middleware(accesslog.DefaultLogger(nil), mux)),
+		serv.WithHandler(accesslog.Middleware(accesslog.DefaultLogger(), mux)),
 	)
 	errors.FatalOnErr(err)
 

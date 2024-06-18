@@ -16,12 +16,16 @@ type Logger interface {
 	LogAccess(ctx context.Context, det Details, req *http.Request)
 }
 
-func DefaultLogger(l *log.Logger) Logger {
+const panicNilLog = "accesslog.NewLogger: log.Logger should not be nil"
+
+func NewLogger(l *log.Logger) Logger {
 	if l == nil {
-		l = log.Default()
+		panic(panicNilLog)
 	}
 	return &defaultLogger{l}
 }
+
+func DefaultLogger() Logger { return &defaultLogger{log.Default()} }
 
 var _ Logger = (*defaultLogger)(nil)
 
@@ -46,9 +50,9 @@ func (l *defaultLogger) LogAccess(_ context.Context, det Details, req *http.Requ
 	)
 }
 
-type nopLogger struct{}
-
 func NopLogger() Logger { return new(nopLogger) }
+
+type nopLogger struct{}
 
 func (*nopLogger) LogAccess(context.Context, Details, *http.Request) {}
 
