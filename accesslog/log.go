@@ -16,20 +16,20 @@ type Logger interface {
 	LogAccess(ctx context.Context, det Details, req *http.Request)
 }
 
-const panicNilLog = "accesslog.NewLogger: log.Logger should not be nil"
+const panicNewNilLogger = "accesslog.NewLogger: log.Logger should not be nil"
 
 func NewLogger(l *log.Logger) Logger {
 	if l == nil {
-		panic(panicNilLog)
+		panic(panicNewNilLogger)
 	}
-	return &defaultLogger{l}
+	return &logger{l}
 }
 
-func DefaultLogger() Logger { return &defaultLogger{log.Default()} }
+func DefaultLogger() Logger { return &logger{log.Default()} }
 
-type defaultLogger struct{ *log.Logger }
+type logger struct{ *log.Logger }
 
-func (l *defaultLogger) LogAccess(_ context.Context, det Details, req *http.Request) {
+func (l *logger) LogAccess(_ context.Context, det Details, req *http.Request) {
 	handlerName := det.HandlerName
 	if handlerName == "" {
 		handlerName = "-"

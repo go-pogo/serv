@@ -25,37 +25,37 @@ type ErrorLogger interface {
 	ErrorLoggerProvider
 }
 
-const panicNilLog = "serv.NewLogger: log.Logger should not be nil"
+const panicNewNilLogger = "serv.NewLogger: log.Logger should not be nil"
 
 // NewLogger returns an [ErrorLogger] that uses a [log.Logger] to log the
 // [Server]'s lifecycle events.
 func NewLogger(l *log.Logger) ErrorLogger {
 	if l == nil {
-		panic(panicNilLog)
+		panic(panicNewNilLogger)
 	}
-	return &defaultLogger{l}
+	return &logger{l}
 }
 
 // DefaultLogger returns an [ErrorLogger] that uses [log.Default] to log the
 // [Server]'s lifecycle events.
-func DefaultLogger() ErrorLogger { return &defaultLogger{log.Default()} }
+func DefaultLogger() ErrorLogger { return &logger{log.Default()} }
 
-type defaultLogger struct{ *log.Logger }
+type logger struct{ *log.Logger }
 
-func (l *defaultLogger) ErrorLogger() *log.Logger { return l.Logger }
+func (l *logger) ErrorLogger() *log.Logger { return l.Logger }
 
-func (l *defaultLogger) name(name string) string {
+func (l *logger) name(name string) string {
 	if name == "" {
 		return "server"
 	}
 	return "server " + name
 }
 
-func (l *defaultLogger) LogServerStart(name, addr string) {
+func (l *logger) LogServerStart(name, addr string) {
 	l.Logger.Println(l.name(name) + " starting on " + addr)
 }
 
-func (l *defaultLogger) LogServerStartTLS(name, addr, certFile, keyFile string) {
+func (l *logger) LogServerStartTLS(name, addr, certFile, keyFile string) {
 	if certFile == "" || keyFile == "" {
 		l.Logger.Println(l.name(name) + " starting on " + addr + " using TLS")
 	} else {
@@ -69,11 +69,11 @@ func (l *defaultLogger) LogServerStartTLS(name, addr, certFile, keyFile string) 
 	}
 }
 
-func (l *defaultLogger) LogServerShutdown(name string) {
+func (l *logger) LogServerShutdown(name string) {
 	l.Logger.Println(l.name(name) + " shutting down")
 }
 
-func (l *defaultLogger) LogServerClose(name string) {
+func (l *logger) LogServerClose(name string) {
 	l.Logger.Println(l.name(name) + " closing")
 }
 

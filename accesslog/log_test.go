@@ -13,11 +13,11 @@ import (
 
 func TestNewLogger(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
-		assert.PanicsWithValue(t, panicNilLog, func() { _ = NewLogger(nil) })
+		assert.PanicsWithValue(t, panicNewNilLogger, func() { _ = NewLogger(nil) })
 	})
 }
 
 func TestDefaultLogger(t *testing.T) {
 	want := log.Default()
-	assert.Same(t, want, DefaultLogger().(*defaultLogger).Logger)
+	assert.Same(t, want, DefaultLogger().(*logger).Logger)
 }
