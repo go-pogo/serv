@@ -27,8 +27,6 @@ func NewLogger(l *log.Logger) Logger {
 
 func DefaultLogger() Logger { return &defaultLogger{log.Default()} }
 
-var _ Logger = (*defaultLogger)(nil)
-
 type defaultLogger struct{ *log.Logger }
 
 func (l *defaultLogger) LogAccess(_ context.Context, det Details, req *http.Request) {
@@ -37,7 +35,7 @@ func (l *defaultLogger) LogAccess(_ context.Context, det Details, req *http.Requ
 		handlerName = "-"
 	}
 
-	l.Printf("%s: %s %s \"%s %s %s\" %d %db %s\n",
+	l.Logger.Printf("%s: %s %s \"%s %s %s\" %d %db %s\n",
 		Message,
 		RemoteAddr(req),
 		handlerName,
