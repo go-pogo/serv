@@ -7,8 +7,8 @@ github.com/go-pogo/easytls v0.1.2 h1:T2NBG8Jaq5LGAVQ7JWuTzyGgAMoc+zJ6iw0j3RPDkfk
 github.com/go-pogo/easytls v0.1.2/go.mod h1:srRjK362n5Y2/QZ3djuB7uFbw308moaetiMHm9oqDqY=
 github.com/go-pogo/errors v0.11.1 h1:q2WYtjRFrANsCT+9WnN4hGgQg1E1hyuuSDbBkM2+RrU=
 github.com/go-pogo/errors v0.11.1/go.mod h1:siGu70A3ZN66hrvkQuK+t3O5eB7kquLnaw52L2IBtYg=
-github.com/go-pogo/rawconv v0.6.0 h1:pZKl10gPgiDinclSEG4Lfe+CYkeDK39XGHMpUZDsfCk=
-github.com/go-pogo/rawconv v0.6.0/go.mod h1:fur2WrV1naaFEg3gCjVe8CRMj+0o3rYY7VYEZb/pESc=
+github.com/go-pogo/rawconv v0.6.1 h1:XOWLHkHZzOVZpeWqGEp3L+NC6TmBSF5vdINCAH4Ty0U=
+github.com/go-pogo/rawconv v0.6.1/go.mod h1:2R6ETM3sdcR3twJpyW0n0hqcRr2prXChKaF4nkbiyic=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.3.0 h1:WgNl7dwNpEZ6jJ9k1snq4pZsg7DOEN8hP9Xw0Tsjwk0=
 github.com/kr/pretty v0.3.0/go.mod h1:640gp4NfQd8pI5XOwp5fnNeVWj67G7CFk/SaSQn7NBk=
