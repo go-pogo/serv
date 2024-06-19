@@ -4,8 +4,8 @@ go 1.22.0
 
 require (
 	github.com/felixge/httpsnoop v1.0.4
-	github.com/go-pogo/easytls v0.1.1
-	github.com/go-pogo/errors v0.11.0
+	github.com/go-pogo/easytls v0.1.2
+	github.com/go-pogo/errors v0.11.1
 	github.com/go-pogo/rawconv v0.6.0
 	github.com/stretchr/testify v1.9.0
 )
