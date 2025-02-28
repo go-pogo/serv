@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	ErrApplyOptions     errors.Msg = "error while applying option(s)"
 	ErrAlreadyStarted   errors.Msg = "server has already started"
 	ErrUnableToStart    errors.Msg = "unable to start server"
 	ErrUnableToShutdown errors.Msg = "unable to shutdown server"
@@ -84,7 +85,7 @@ func (srv *Server) with(opts []Option) error {
 		}
 		err = errors.Append(err, opt.apply(srv))
 	}
-	return err
+	return errors.Wrap(err, ErrApplyOptions)
 }
 
 // Name returns an optional provided name of the server. Use [WithName] to set
