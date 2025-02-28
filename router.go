@@ -45,13 +45,16 @@ type Route struct {
 	Handler http.Handler
 }
 
-func (r Route) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
+func (r Route) handler() http.Handler {
 	if r.Name == "" {
-		r.Handler.ServeHTTP(wri, req)
-		return
+		return r.Handler
 	}
 
-	AddHandlerName(r.Name, r.Handler).ServeHTTP(wri, req)
+	return AddHandlerName(r.Name, r.Handler)
+}
+
+func (r Route) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
+	r.handler().ServeHTTP(wri, req)
 }
 
 // Router is a [http.Handler] that can handle routes.
@@ -89,7 +92,7 @@ func DefaultServeMux() *ServeMux { return &defaultServeMux }
 // HandleRoute registers a route to the [ServeMux] using its internal
 // [http.ServeMux.Handle].
 func (mux *ServeMux) HandleRoute(route Route) {
-	mux.serveMux.Handle(route.Method+" "+route.Pattern, route)
+	mux.serveMux.Handle(route.Method+" "+route.Pattern, route.handler())
 }
 
 // WithNotFoundHandler sets a [http.Handler] which is called when there is no
