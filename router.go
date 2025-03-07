@@ -6,6 +6,7 @@ package serv
 
 import (
 	"net/http"
+	"sync"
 )
 
 // RouteHandler handles routes.
@@ -76,6 +77,7 @@ type serveMux = http.ServeMux
 // compatibility etc.
 type ServeMux struct {
 	*serveMux
+	mut      sync.RWMutex
 	notFound http.Handler
 }
 
@@ -95,16 +97,27 @@ func (mux *ServeMux) HandleRoute(route Route) {
 	mux.serveMux.Handle(route.Method+" "+route.Pattern, route.handler())
 }
 
+// NotFoundHandler returns the [http.Handler] set with
+// [ServeMux.WithNotFoundHandler].
+func (mux *ServeMux) NotFoundHandler() http.Handler {
+	mux.mut.RLock()
+	defer mux.mut.RUnlock()
+	return mux.notFound
+}
+
 // WithNotFoundHandler sets a [http.Handler] which is called when there is no
 // matching pattern. If not set, [ServeMux] will use the internal
 // [http.ServeMux]'s default not found handler, which is [http.NotFound].
 func (mux *ServeMux) WithNotFoundHandler(h http.Handler) *ServeMux {
+	mux.mut.Lock()
 	mux.notFound = h
+	mux.mut.Unlock()
 	return mux
 }
 
 func (mux *ServeMux) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
-	if mux.notFound == nil {
+	notFound := mux.NotFoundHandler()
+	if notFound == nil {
 		mux.serveMux.ServeHTTP(wri, req)
 		return
 	}
@@ -122,7 +135,7 @@ func (mux *ServeMux) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 		// http.Request, thus http.Request.PathValue won't work as expected
 		h.ServeHTTP(wri, req)
 	} else {
-		mux.notFound.ServeHTTP(wri, req)
+		notFound.ServeHTTP(wri, req)
 	}
 }
 
