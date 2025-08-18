@@ -117,18 +117,18 @@ func (srv *Server) start() error {
 			State: srv.state,
 		})
 	}
-
 	if srv.state == StateClosed {
 		srv.httpServer = http.Server{
-			DisableGeneralOptionsHandler: srv.httpServer.DisableGeneralOptionsHandler,
-			TLSConfig:                    srv.httpServer.TLSConfig,
-			TLSNextProto:                 srv.httpServer.TLSNextProto,
-			ConnState:                    srv.httpServer.ConnState,
-			ErrorLog:                     srv.httpServer.ErrorLog,
-			BaseContext:                  srv.httpServer.BaseContext,
-			ConnContext:                  srv.httpServer.ConnContext,
+			DisableGeneralOptionsHandler: srv.DisableGeneralOptionsHandler,
+			TLSConfig:                    srv.TLSConfig,
+			TLSNextProto:                 srv.TLSNextProto,
+			ConnState:                    srv.ConnState,
+			ErrorLog:                     srv.ErrorLog,
+			BaseContext:                  srv.BaseContext,
+			ConnContext:                  srv.ConnContext,
 		}
 	}
+
 	if srv.log == nil {
 		srv.log = NopLogger()
 	}
@@ -232,9 +232,9 @@ func (srv *Server) isClosed(err error) (ok bool) {
 // error when the server is closed.
 func (srv *Server) Run() error {
 	srv.mut.RLock()
-	useTLS := srv.httpServer.TLSConfig != nil &&
-		(len(srv.httpServer.TLSConfig.Certificates) != 0 ||
-			srv.httpServer.TLSConfig.GetCertificate != nil)
+	useTLS := srv.TLSConfig != nil &&
+		(len(srv.TLSConfig.Certificates) != 0 ||
+			srv.TLSConfig.GetCertificate != nil)
 	srv.mut.RUnlock()
 
 	var err error
@@ -270,7 +270,7 @@ func (srv *Server) Shutdown(ctx context.Context) error {
 	srv.mut.Lock()
 	srv.state = StateClosing
 	srv.log.LogServerShutdown(srv.name)
-	srv.httpServer.SetKeepAlivesEnabled(false)
+	srv.SetKeepAlivesEnabled(false)
 	shutdownTimeout := srv.Config.ShutdownTimeout
 	srv.mut.Unlock()
 

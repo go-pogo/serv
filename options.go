@@ -119,7 +119,7 @@ func BaseContext(ctx context.Context) func(_ net.Listener) context.Context {
 // internal [http.Server.BaseContext].
 func WithBaseContext(ctx context.Context) Option {
 	return optionFunc(func(srv *Server) error {
-		srv.httpServer.BaseContext = BaseContext(ctx)
+		srv.BaseContext = BaseContext(ctx)
 		return nil
 	})
 }
@@ -139,7 +139,7 @@ func WithTLSConfig(conf *tls.Config, opts ...easytls.Option) Option {
 			return err
 		}
 
-		srv.httpServer.TLSConfig = conf
+		srv.TLSConfig = conf
 		return nil
 	})
 }

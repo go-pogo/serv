@@ -35,7 +35,7 @@ func (l *logger) LogAccess(_ context.Context, det Details, req *http.Request) {
 		handlerName = "-"
 	}
 
-	l.Logger.Printf("%s: %s %s \"%s %s %s\" %d %db %s\n",
+	l.Printf("%s: %s %s \"%s %s %s\" %d %db %s\n",
 		Message,
 		RemoteAddr(req),
 		handlerName,
