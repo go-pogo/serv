@@ -52,14 +52,14 @@ func (l *logger) name(name string) string {
 }
 
 func (l *logger) LogServerStart(name, addr string) {
-	l.Logger.Println(l.name(name) + " starting on " + addr)
+	l.Println(l.name(name) + " starting on " + addr)
 }
 
 func (l *logger) LogServerStartTLS(name, addr, certFile, keyFile string) {
 	if certFile == "" || keyFile == "" {
-		l.Logger.Println(l.name(name) + " starting on " + addr + " using TLS")
+		l.Println(l.name(name) + " starting on " + addr + " using TLS")
 	} else {
-		l.Logger.Printf(
+		l.Printf(
 			"%s starting on %s using TLS with cert file %s and key file %s\n",
 			l.name(name),
 			addr,
@@ -70,11 +70,11 @@ func (l *logger) LogServerStartTLS(name, addr, certFile, keyFile string) {
 }
 
 func (l *logger) LogServerShutdown(name string) {
-	l.Logger.Println(l.name(name) + " shutting down")
+	l.Println(l.name(name) + " shutting down")
 }
 
 func (l *logger) LogServerClose(name string) {
-	l.Logger.Println(l.name(name) + " closing")
+	l.Println(l.name(name) + " closing")
 }
 
 // NopLogger returns a [Logger] that does nothing.

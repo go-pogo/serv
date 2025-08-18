@@ -34,9 +34,9 @@ func WithLogger(log Logger) Option {
 		}
 
 		srv.log = log
-		if srv.httpServer.ErrorLog == nil {
+		if srv.ErrorLog == nil {
 			if el, ok := log.(ErrorLoggerProvider); ok {
-				srv.httpServer.ErrorLog = el.ErrorLogger()
+				srv.ErrorLog = el.ErrorLogger()
 			}
 		}
 		return nil
@@ -55,7 +55,7 @@ func WithErrorLogger(l *log.Logger) Option {
 			panic(panicNilErrorLogger)
 		}
 
-		srv.httpServer.ErrorLog = l
+		srv.ErrorLog = l
 		return nil
 	})
 }

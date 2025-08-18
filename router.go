@@ -94,7 +94,7 @@ func DefaultServeMux() *ServeMux { return &defaultServeMux }
 // HandleRoute registers a route to the [ServeMux] using its internal
 // [http.ServeMux.Handle].
 func (mux *ServeMux) HandleRoute(route Route) {
-	mux.serveMux.Handle(route.Method+" "+route.Pattern, route.handler())
+	mux.Handle(route.Method+" "+route.Pattern, route.handler())
 }
 
 // NotFoundHandler returns the [http.Handler] set with
