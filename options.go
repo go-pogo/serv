@@ -23,6 +23,12 @@ type optionFunc func(srv *Server) error
 
 func (fn optionFunc) apply(srv *Server) error { return fn(srv) }
 
+func With(opts []Option) Option {
+	return optionFunc(func(srv *Server) error {
+		return srv.with(opts)
+	})
+}
+
 const panicNilLogger = "serv.WithLogger: Logger should not be nil"
 
 // WithLogger adds a [Logger] to the [Server]. It will also set the internal

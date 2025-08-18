@@ -56,7 +56,7 @@ type Server struct {
 func New(opts ...Option) (*Server, error) {
 	srv := Server{Config: defaultConfig}
 	if err := srv.with(opts); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, ErrApplyOptions)
 	}
 	return &srv, nil
 }
@@ -74,7 +74,11 @@ func (srv *Server) With(opts ...Option) error {
 
 	srv.mut.Lock()
 	defer srv.mut.Unlock()
-	return srv.with(opts)
+
+	if err := srv.with(opts); err != nil {
+		return errors.Wrap(err, ErrApplyOptions)
+	}
+	return nil
 }
 
 func (srv *Server) with(opts []Option) error {
@@ -85,7 +89,7 @@ func (srv *Server) with(opts []Option) error {
 		}
 		err = errors.Append(err, opt.apply(srv))
 	}
-	return errors.Wrap(err, ErrApplyOptions)
+	return err
 }
 
 // Name returns an optional provided name of the server. Use [WithName] to set
