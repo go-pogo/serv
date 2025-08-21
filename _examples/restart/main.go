@@ -7,17 +7,18 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"sync/atomic"
 	"syscall"
 
 	"github.com/go-pogo/errors"
 	"github.com/go-pogo/serv"
 	"github.com/go-pogo/serv/accesslog"
+	"github.com/go-pogo/serv/middleware"
 )
 
 // This program restarts the server after the "/restart" url is visited.
@@ -38,7 +39,11 @@ func main() {
 		Name:    "count",
 		Pattern: "/",
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			_, _ = w.Write([]byte(strconv.FormatUint(restartCount.Load(), 10)))
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprintf(w,
+				`<b>%d</b><br /><a href="/restart">restart</a>`,
+				restartCount.Load(),
+			)
 		}),
 	})
 	mux.HandleRoute(serv.Route{
@@ -51,7 +56,8 @@ func main() {
 		Name:    "restart",
 		Pattern: "/restart",
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			_, _ = w.Write([]byte("Restarting server..."))
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`<i>Restarting server...</i><br /><a href="/">show count</a>`))
 
 			go func() {
 				chRestart <- struct{}{}
@@ -65,7 +71,9 @@ func main() {
 	srv, err := serv.New(port,
 		serv.WithBaseContext(ctx),
 		serv.WithDefaultLogger(),
-		serv.WithHandler(accesslog.Middleware(accesslog.DefaultLogger(), mux)),
+		serv.WithHandler(middleware.Wrap(mux,
+			accesslog.Middleware(accesslog.DefaultLogger()),
+		)),
 	)
 	errors.FatalOnErr(err)
 
