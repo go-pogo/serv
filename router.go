@@ -46,7 +46,7 @@ type Route struct {
 	Handler http.Handler
 }
 
-func (r Route) handler() http.Handler {
+func (r Route) GetHandler() http.Handler {
 	if r.Name == "" {
 		return r.Handler
 	}
@@ -55,7 +55,7 @@ func (r Route) handler() http.Handler {
 }
 
 func (r Route) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
-	r.handler().ServeHTTP(wri, req)
+	r.GetHandler().ServeHTTP(wri, req)
 }
 
 // Router is a [http.Handler] that can handle routes.
@@ -91,10 +91,21 @@ var defaultServeMux = ServeMux{serveMux: http.DefaultServeMux}
 // DefaultServeMux returns a [ServeMux] containing [http.DefaultServeMux].
 func DefaultServeMux() *ServeMux { return &defaultServeMux }
 
+func (mux *ServeMux) HandlerRoute(req *http.Request) Route {
+	h, pattern := mux.Handler(req)
+	if r, ok := h.(Route); ok {
+		return r
+	}
+	return Route{
+		Pattern: pattern,
+		Handler: h,
+	}
+}
+
 // HandleRoute registers a route to the [ServeMux] using its internal
 // [http.ServeMux.Handle].
 func (mux *ServeMux) HandleRoute(route Route) {
-	mux.Handle(route.Method+" "+route.Pattern, route.handler())
+	mux.Handle(route.Method+" "+route.Pattern, route.GetHandler())
 }
 
 // NotFoundHandler returns the [http.Handler] set with
@@ -116,13 +127,7 @@ func (mux *ServeMux) WithNotFoundHandler(h http.Handler) *ServeMux {
 }
 
 func (mux *ServeMux) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
-	notFound := mux.NotFoundHandler()
-	if notFound == nil {
-		mux.serveMux.ServeHTTP(wri, req)
-		return
-	}
-
-	// below code is taken from the http.ServeMux.ServeHTTP method
+	// below if-statement is taken from the http.ServeMux.ServeHTTP method
 	if req.RequestURI == "*" {
 		if req.ProtoAtLeast(1, 1) {
 			wri.Header().Set("Connection", "close")
@@ -130,13 +135,18 @@ func (mux *ServeMux) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 		wri.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if h, pattern := mux.serveMux.Handler(req); pattern != "" {
-		// a known limitation is that the pattern and matches are not set in the
-		// http.Request, thus http.Request.PathValue won't work as expected
-		h.ServeHTTP(wri, req)
-	} else {
+
+	notFound := mux.NotFoundHandler()
+
+	h, pattern := mux.Handler(req)
+	if notFound != nil && pattern == "" {
 		notFound.ServeHTTP(wri, req)
+		return
 	}
+
+	//todo: req.SetPathValue()
+	req.Pattern = pattern
+	h.ServeHTTP(wri, req)
 }
 
 func (mux *ServeMux) apply(srv *Server) error {

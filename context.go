@@ -16,6 +16,15 @@ type ctxValues struct {
 	handlerName string
 }
 
+func (v *ctxValues) set(set ctxValues) {
+	if v.serverName == "" {
+		v.serverName = set.serverName
+	}
+	if v.handlerName == "" {
+		v.handlerName = set.handlerName
+	}
+}
+
 // ServerName gets the server's name from context values. Its return value may
 // be an empty string.
 func ServerName(ctx context.Context) string {
@@ -30,14 +39,9 @@ func ServerName(ctx context.Context) string {
 // The server's name can be retrieved using [ServerName].
 func AddServerName(name string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
-		ctx, settings, exists := withCtxValues(req.Context())
-		settings.serverName = name
-
-		if !exists {
-			// add new context to request
-			req = req.WithContext(ctx)
-		}
-		next.ServeHTTP(wri, req)
+		next.ServeHTTP(wri, withCtxValues(req, ctxValues{
+			serverName: name,
+		}))
 	})
 }
 
@@ -55,22 +59,18 @@ func HandlerName(ctx context.Context) string {
 // The handler's name can be retrieved using [HandlerName].
 func AddHandlerName(name string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
-		ctx, settings, exists := withCtxValues(req.Context())
-		settings.handlerName = name
-
-		if !exists {
-			// add new context to request
-			req = req.WithContext(ctx)
-		}
-		next.ServeHTTP(wri, req)
+		next.ServeHTTP(wri, withCtxValues(req, ctxValues{
+			handlerName: name,
+		}))
 	})
 }
 
-func withCtxValues(ctx context.Context) (context.Context, *ctxValues, bool) {
+func withCtxValues(req *http.Request, set ctxValues) *http.Request {
+	ctx := req.Context()
 	if v := ctx.Value(ctxValuesKey{}); v != nil {
-		return ctx, v.(*ctxValues), true
+		v.(*ctxValues).set(set)
+		return req
 	}
 
-	v := new(ctxValues)
-	return context.WithValue(ctx, ctxValuesKey{}, v), v, false
+	return req.WithContext(context.WithValue(ctx, ctxValuesKey{}, &set))
 }
