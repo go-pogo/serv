@@ -1,6 +1,6 @@
 module github.com/go-pogo/serv
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/felixge/httpsnoop v1.0.4
