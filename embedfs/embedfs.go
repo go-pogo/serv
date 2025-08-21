@@ -12,8 +12,6 @@ import (
 	"github.com/go-pogo/errors"
 )
 
-const ErrInvalidSubDir errors.Msg = "invalid sub directory"
-
 type FS interface {
 	fs.FS
 	fs.ReadDirFS
@@ -42,8 +40,6 @@ func New(embed FS, opts ...Option) (*FileServer, error) {
 	return s, nil
 }
 
-func (s *FileServer) ModTime() time.Time { return s.modTime }
-
 func (s *FileServer) applyOpts(opts []Option) error {
 	var err error
 	for _, opt := range opts {
@@ -52,32 +48,11 @@ func (s *FileServer) applyOpts(opts []Option) error {
 	return err
 }
 
+func (s *FileServer) ModTime() time.Time { return s.modTime }
+
 func (s *FileServer) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
 	s.handler.ServeHTTP(wri, req)
 	if !s.modTime.IsZero() {
 		wri.Header().Set("Last-Modified", s.modTime.Format(http.TimeFormat))
-	}
-}
-
-func WithSubDir(dir string) Option {
-	return func(s *FileServer) error {
-		if dir == "" {
-			return nil
-		}
-
-		sub, err := fs.Sub(s.FS, dir)
-		if err != nil {
-			return errors.Wrap(err, ErrInvalidSubDir)
-		}
-
-		s.handler = http.FileServer(http.FS(sub))
-		return nil
-	}
-}
-
-func WithModTime(t time.Time) Option {
-	return func(s *FileServer) error {
-		s.modTime = t.UTC()
-		return nil
 	}
 }
