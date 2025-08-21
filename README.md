@@ -42,6 +42,44 @@ go get github.com/go-pogo/serv
 import "github.com/go-pogo/serv"
 ```
 
+
+## Examples
+
+
+### Basic server
+```go
+package main
+
+import (
+    "context"
+    "log"
+
+    "github.com/go-pogo/errors"
+    "github.com/go-pogo/serv"
+)
+
+func main() {
+    mux := serv.NewServeMux()
+    srv, err := serv.New(serv.Port(8080), mux, serv.WithDefaultLogger())
+    if err != nil {
+        log.Fatalln("Unable to create server:", err.Error())
+    }
+    
+    ctx, stopFn := context.WithCancel(context.Background())
+    go func() {
+        defer stopFn()
+        if err := srv.Run(); err != nil {
+            log.Println("Server error:", err.Error())
+        }
+    }()
+    <-ctx.Done()
+    
+    if err = srv.Shutdown(context.Background()); err != nil {
+        log.Println("Error during shutdown:", err.Error())
+    }
+}
+```
+
 ## Documentation
 
 Additional detailed documentation is available at [pkg.go.dev][doc-url]
