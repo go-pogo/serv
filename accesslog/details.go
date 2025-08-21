@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// Details are collected with [Middleware] and contain additional details of a
+// Details are collected using [NewHandler] and contain additional details of a
 // request and it's corresponding response.
 type Details struct {
 	ServerName  string
