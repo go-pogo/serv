@@ -11,3 +11,19 @@ tasks:
     desc: Run tests via act
     cmds:
       - act -j test
+
+
+  example:basic:
+    desc: Run basic example
+    cmds:
+      - go run ./_examples/basic
+
+  example:fileserver:
+    desc: Run fileserver example
+    cmds:
+      - go run ./_examples/fileserver
+
+  example:restart:
+    desc: Run restart example
+    cmds:
+      - go run ./_examples/restart
