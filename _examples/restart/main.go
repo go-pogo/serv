@@ -19,6 +19,7 @@ import (
 	"github.com/go-pogo/serv"
 	"github.com/go-pogo/serv/accesslog"
 	"github.com/go-pogo/serv/middleware"
+	"github.com/go-pogo/serv/response"
 )
 
 // This program restarts the server after the "/restart" url is visited.
@@ -50,7 +51,7 @@ func main() {
 		Name:    "favicon",
 		Method:  http.MethodGet,
 		Pattern: "/favicon.ico",
-		Handler: accesslog.IgnoreHandler(serv.NoContentHandler()),
+		Handler: accesslog.IgnoreHandler(response.NoContentHandler()),
 	})
 	mux.HandleRoute(serv.Route{
 		Name:    "restart",
