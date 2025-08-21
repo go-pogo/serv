@@ -40,6 +40,5 @@ func IgnoreHandler(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(wri, req)
-		wri.WriteHeader(http.StatusNoContent)
 	})
 }
