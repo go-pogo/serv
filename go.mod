@@ -2,6 +2,9 @@ module github.com/go-pogo/serv
 
 go 1.23.0
 
+// cors subpackage was not working properly, do not use it
+retract v0.6.0
+
 require (
 	github.com/felixge/httpsnoop v1.0.4
 	github.com/go-pogo/easytls v0.1.4
