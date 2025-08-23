@@ -6,6 +6,7 @@ package serv
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
 	"net/http"
 	"sync"
@@ -225,6 +226,13 @@ func (srv *Server) isClosed(err error) (ok bool) {
 	return ok
 }
 
+// ShouldUseTLS tries to determine if TLS is properly configured.
+func ShouldUseTLS(conf *tls.Config) bool {
+	return conf != nil &&
+		(len(conf.Certificates) != 0 ||
+			conf.GetCertificate != nil)
+}
+
 // Run starts the server and calls either [Server.ListenAndServe] or
 // [Server.ListenAndServeTLS], depending on the provided TLS config/option(s).
 // Unlike [Server.Serve], [Server.ListenAndServe], [Server.ServeTLS], and
@@ -232,9 +240,7 @@ func (srv *Server) isClosed(err error) (ok bool) {
 // error when the server is closed.
 func (srv *Server) Run() error {
 	srv.mut.RLock()
-	useTLS := srv.TLSConfig != nil &&
-		(len(srv.TLSConfig.Certificates) != 0 ||
-			srv.TLSConfig.GetCertificate != nil)
+	useTLS := ShouldUseTLS(srv.TLSConfig)
 	srv.mut.RUnlock()
 
 	var err error
