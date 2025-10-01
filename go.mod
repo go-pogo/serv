@@ -9,8 +9,8 @@ require (
 	github.com/felixge/httpsnoop v1.0.4
 	github.com/go-pogo/easytls v0.1.4
 	github.com/go-pogo/errors v0.12.0
-	github.com/go-pogo/rawconv v0.6.3
-	github.com/stretchr/testify v1.10.0
+	github.com/go-pogo/rawconv v0.6.4
+	github.com/stretchr/testify v1.11.1
 )
 
 require (
