@@ -54,8 +54,13 @@ func (s *FileServer) applyOpts(opts []Option) error {
 func (s *FileServer) ModTime() time.Time { return s.modTime }
 
 func (s *FileServer) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
+	WriteLastModified(wri.Header(), s.modTime)
 	s.handler.ServeHTTP(wri, req)
-	if !s.modTime.IsZero() {
-		wri.Header().Set("Last-Modified", s.modTime.Format(http.TimeFormat))
+}
+
+func WriteLastModified(h http.Header, mt time.Time) {
+	if mt.IsZero() {
+		return
 	}
+	h.Set("Last-Modified", mt.Format(http.TimeFormat))
 }
