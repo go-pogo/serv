@@ -24,9 +24,11 @@ func (l *CommonLogger) LogAccess(_ context.Context, det accesslog.Details, req *
 		l.Writer = os.Stdout
 	}
 
-	username := accesslog.Username(req)
-	if username == "" {
-		username = "-"
+	username := "-"
+	if req.URL != nil {
+		if u := req.URL.User.Username(); u != "" {
+			username = u
+		}
 	}
 
 	_, _ = fmt.Fprintf(l, "%s - %s [%s] \"%s %s %s\" %d %d\n",

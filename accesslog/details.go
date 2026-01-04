@@ -58,11 +58,11 @@ func RequestURI(r *http.Request) string {
 	return uri
 }
 
+// Username returns a username when available in the request's url.
+// Deprecated: will be removed in future releases.
 func Username(r *http.Request) string {
-	if r.URL != nil && r.URL.User != nil {
-		if user := r.URL.User.Username(); user != "" {
-			return user
-		}
+	if r.URL != nil {
+		return r.URL.User.Username()
 	}
 	return ""
 }
