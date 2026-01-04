@@ -8,14 +8,16 @@ import (
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/go-pogo/serv"
 )
 
 // Details are collected using [NewHandler] and contain additional details of a
 // request and it's corresponding response.
 type Details struct {
-	ServerName  string
-	HandlerName string
-	UserAgent   string
+	serv.Info
+
+	UserAgent string
 
 	// StatusCode is the first http response code passed to the
 	// [http.ResponseWriter.WriteHeader]. See [httpsnoop.Metrics] for additional

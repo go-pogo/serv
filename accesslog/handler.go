@@ -42,26 +42,33 @@ func NewHandler(next http.Handler, log Logger) http.Handler {
 }
 
 func (h *handler) ServeHTTP(wri http.ResponseWriter, req *http.Request) {
+	ctx, settings, existing := withSettings(req.Context())
+	if !existing {
+		req = req.WithContext(ctx)
+	} else if settings.shouldIgnore {
+		// when set outside handler h
+		h.next.ServeHTTP(wri, req)
+		return
+	}
+
 	var det Details
 	det.StartTime = time.Now()
 	det.RequestCount = atomic.AddInt64(&h.traffic, 1)
 	defer atomic.AddInt64(&h.traffic, -1)
 
-	ctx, settings, existing := withSettings(req.Context())
-	if !existing {
-		req = req.WithContext(ctx)
-	}
-
 	met := httpsnoop.CaptureMetrics(h.next, wri, req)
 	if settings.shouldIgnore {
+		// when set inside h.next
 		return
+	}
+
+	if info := serv.InfoFromContext(ctx); info != nil {
+		det.Info = *info
 	}
 
 	det.StatusCode = met.Code
 	det.Duration = met.Duration
 	det.BytesWritten = met.Written
-	det.ServerName = serv.ServerName(ctx)
-	det.HandlerName = serv.HandlerName(ctx)
 	det.UserAgent = req.UserAgent()
 
 	h.log.LogAccess(ctx, det, req.Clone(&noopCtx{ctx}))
