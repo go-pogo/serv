@@ -62,7 +62,7 @@ func TestServerName(t *testing.T) {
 		srv.Handler = http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
 			assert.Equal(t, want, ServerName(req.Context()))
 		})
-		srv.start()
+		require.NoError(t, srv.start())
 		srv.httpServer.Handler.ServeHTTP(nil, httptest.NewRequest(http.MethodGet, "/", nil))
 	})
 }
