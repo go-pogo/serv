@@ -20,3 +20,9 @@ func NoContentHandler() http.Handler {
 		NoContent(w)
 	})
 }
+
+// NoopHandler returns a [http.Handler] which ignores the request and doesn't
+// write anything.
+func NoopHandler() http.Handler {
+	return http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+}
