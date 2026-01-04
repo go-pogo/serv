@@ -6,7 +6,12 @@ package middleware
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"net/http"
+	"time"
+
+	"github.com/go-pogo/serv"
 )
 
 func AddContextValue(key, value any, next http.Handler) http.Handler {
@@ -14,5 +19,22 @@ func AddContextValue(key, value any, next http.Handler) http.Handler {
 		next.ServeHTTP(wri, req.WithContext(
 			context.WithValue(req.Context(), key, value),
 		))
+	})
+}
+
+const headerRequestID = "X-Request-ID"
+
+// AddRequestID middleware reads the request id from the "X-Request-ID" header
+// or generates a random id, and adds this to the [http.Request]'s context
+// values using [serv.AddRequestID].
+func AddRequestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
+		id := req.Header.Get(headerRequestID)
+		if id == "" {
+			hash := md5.Sum([]byte(time.Now().String() + ""))
+			id = hex.EncodeToString(hash[:])
+		}
+
+		serv.AddRequestID(id, next).ServeHTTP(wri, req)
 	})
 }
