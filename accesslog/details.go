@@ -35,6 +35,8 @@ type Details struct {
 }
 
 // RemoteAddr returns a sanitized remote address from the [http.Request].
+// Add [middleware.RealIP] middleware to your [http.Handler] to handle (proxy)
+// forwarded traffic.
 func RemoteAddr(r *http.Request) string {
 	addr, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

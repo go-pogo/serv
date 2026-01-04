@@ -13,7 +13,10 @@ import (
 
 const contentTypeJSON = "application/json"
 
-// WriteJSON encodes v to JSON and writes it to w.
+// WriteJSON encodes v to JSON and writes it to [http.ResponseWriter] wri. It
+// also sets the response header's "Content-Type" to "application/json". Any
+// errors during encoding will be returned.
+// WriteJSON does not do anything and returns nil, when v is nil.
 func WriteJSON(wri http.ResponseWriter, v any) error {
 	if v == nil {
 		return nil
