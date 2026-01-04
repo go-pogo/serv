@@ -9,47 +9,90 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-pogo/serv/response"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRedirectHTTPS(t *testing.T) {
-	const wantBody = "Hello, World!"
-	handler := RedirectHTTPS(http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
-		_, _ = wri.Write([]byte(wantBody))
-	}))
+	tests := []struct {
+		method       string
+		target       string
+		wantCode     int
+		wantLocation string
+	}{
+		{
+			method:   http.MethodGet,
+			target:   "https://example.com",
+			wantCode: http.StatusOK,
+		},
+		{
+			method:       http.MethodGet,
+			target:       "http://example.com",
+			wantCode:     http.StatusMovedPermanently,
+			wantLocation: "https://example.com",
+		},
+		{
+			method:       http.MethodPost,
+			target:       "http://example.com/post-me",
+			wantCode:     http.StatusTemporaryRedirect,
+			wantLocation: "https://example.com/post-me",
+		},
+	}
 
-	t.Run("redirect", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-		handler.ServeHTTP(rec, httptest.NewRequest("GET", "http://example.com", nil))
-		assert.Equal(t, http.StatusMovedPermanently, rec.Code)
-		assert.Equal(t, "https://example.com", rec.Header().Get("Location"))
-	})
-	t.Run("no redirect", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-		handler.ServeHTTP(rec, httptest.NewRequest("GET", "https://example.com", nil))
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, "", rec.Header().Get("Location"))
-		assert.Equal(t, wantBody, rec.Body.String())
-	})
+	handler := RedirectHTTPS(response.NoopHandler())
+	for _, tc := range tests {
+		t.Run(tc.method+" "+tc.target, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, httptest.NewRequest(tc.method, tc.target, nil))
+			assert.Equal(t, tc.wantCode, rec.Code)
+			assert.Equal(t, tc.wantLocation, rec.Header().Get("Location"))
+		})
+	}
 }
 
 func TestRemoveTrailingSlash(t *testing.T) {
-	const wantBody = "Hello, World!"
-	handler := RemoveTrailingSlash(http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
-		_, _ = wri.Write([]byte(wantBody))
-	}))
+	tests := []struct {
+		method       string
+		target       string
+		wantCode     int
+		wantLocation string
+	}{
+		{
+			method:       http.MethodGet,
+			target:       "/test/",
+			wantCode:     http.StatusMovedPermanently,
+			wantLocation: "/test",
+		},
+		{
+			method:       http.MethodPost,
+			target:       "/test/",
+			wantCode:     http.StatusTemporaryRedirect,
+			wantLocation: "/test",
+		},
+		{
+			method:   http.MethodGet,
+			target:   "/no-redirect",
+			wantCode: http.StatusOK,
+		},
+		{
+			method:   http.MethodGet,
+			target:   "http://example.com",
+			wantCode: http.StatusOK,
+		},
+		{
+			method:   http.MethodGet,
+			target:   "http://example.com/",
+			wantCode: http.StatusOK,
+		},
+	}
 
-	t.Run("redirect", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-		handler.ServeHTTP(rec, httptest.NewRequest("GET", "/test/", nil))
-		assert.Equal(t, http.StatusMovedPermanently, rec.Code)
-		assert.Equal(t, "/test", rec.Header().Get("Location"))
-	})
-	t.Run("no redirect", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-		handler.ServeHTTP(rec, httptest.NewRequest("GET", "http://example.com", nil))
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, "", rec.Header().Get("Location"))
-		assert.Equal(t, wantBody, rec.Body.String())
-	})
+	handler := RemoveTrailingSlash(response.NoopHandler())
+	for _, tc := range tests {
+		t.Run(tc.method+" "+tc.target, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, httptest.NewRequest(tc.method, tc.target, nil))
+			assert.Equal(t, tc.wantCode, rec.Code)
+			assert.Equal(t, tc.wantLocation, rec.Header().Get("Location"))
+		})
+	}
 }

@@ -17,7 +17,7 @@ func RedirectHTTPS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
 		if req.URL.Scheme == "http" {
 			req.URL.Scheme += "s"
-			http.Redirect(wri, req, req.URL.String(), statusCode(req.Method))
+			redirect(wri, req)
 		} else {
 			next.ServeHTTP(wri, req)
 		}
@@ -31,19 +31,20 @@ func RedirectHTTPS(next http.Handler) http.Handler {
 // and [http.StatusTemporaryRedirect] for any other method.
 func RemoveTrailingSlash(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == "/" || strings.HasSuffix(req.URL.Path, "/") {
-			http.Redirect(wri, req, strings.TrimRight(req.URL.Path, "/"), statusCode(req.Method))
+		if req.URL.Path != "/" && strings.HasSuffix(req.URL.Path, "/") {
+			req.URL.Path = strings.TrimRight(req.URL.Path, "/")
+			redirect(wri, req)
 		} else {
 			next.ServeHTTP(wri, req)
 		}
 	})
 }
 
-func statusCode(method string) int {
-	switch method {
-	case http.MethodGet:
-		return http.StatusMovedPermanently
-	default:
-		return http.StatusTemporaryRedirect
+func redirect(wri http.ResponseWriter, req *http.Request) {
+	code := http.StatusTemporaryRedirect
+	if req.Method == http.MethodGet {
+		code = http.StatusMovedPermanently
 	}
+
+	http.Redirect(wri, req, req.URL.String(), code)
 }
