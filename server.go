@@ -141,13 +141,16 @@ func (srv *Server) start() error {
 	if srv.Handler == nil {
 		handler = DefaultServeMux()
 	}
-	if srv.name != "" {
-		handler = AddServerName(srv.name, handler)
-	}
 
 	srv.Config.ApplyTo(&srv.httpServer)
 	srv.httpServer.Addr = srv.Addr
-	srv.httpServer.Handler = handler
+	srv.httpServer.Handler = http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
+		req, info := requestWithInfo(req)
+		if srv.name != "" {
+			info.ServerName = srv.name
+		}
+		handler.ServeHTTP(wri, req)
+	})
 
 	srv.state = StateStarted
 	return nil
