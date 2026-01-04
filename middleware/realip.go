@@ -9,15 +9,18 @@
 package middleware
 
 import (
+	"net"
 	"net/http"
 	"strings"
 )
 
-var xForwardedFor = http.CanonicalHeaderKey("X-Forwarded-For")
-var xRealIP = http.CanonicalHeaderKey("X-Real-IP")
+const (
+	headerForwardedFor = "X-Forwarded-For"
+	headerRealIP       = "X-Real-Ip"
+)
 
-// RealIP is a middleware that sets a http.Request's RemoteAddr to the results
-// of parsing either the X-Forwarded-For header or the X-Real-IP header (in
+// RealIP is a middleware that sets a [http.Request]'s RemoteAddr to the results
+// of parsing either "X-Forwarded-For" header(s) or the "X-Real-Ip" header (in
 // that order).
 //
 // This middleware should be inserted fairly early in the middleware stack to
@@ -34,26 +37,27 @@ var xRealIP = http.CanonicalHeaderKey("X-Real-IP")
 //
 // This function is based on the RealIP middleware from the Goji web framework.
 func RealIP(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if rip := realIP(r); rip != "" {
-			r.RemoteAddr = rip
+	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
+		if rip := realIP(req); rip != "" {
+			req.RemoteAddr = rip
 		}
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(wri, req)
 	})
 }
 
 func realIP(r *http.Request) string {
-	var ip string
-
-	if xff := r.Header.Get(xForwardedFor); xff != "" {
-		i := strings.Index(xff, ", ")
-		if i == -1 {
-			i = len(xff)
+	for _, xff := range r.Header.Values(headerForwardedFor) {
+		for _, fwd := range strings.Split(xff, ",") {
+			if fwd == "" {
+				continue
+			}
+			if ip := net.ParseIP(strings.TrimSpace(fwd)); ip.IsGlobalUnicast() {
+				return ip.String()
+			}
 		}
-		ip = xff[:i]
-	} else if xrip := r.Header.Get(xRealIP); xrip != "" {
-		ip = xrip
 	}
-
-	return ip
+	if rip := r.Header.Get(headerRealIP); rip != "" {
+		return net.ParseIP(rip).String()
+	}
+	return ""
 }
