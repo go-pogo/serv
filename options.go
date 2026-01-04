@@ -15,6 +15,7 @@ import (
 	"github.com/go-pogo/errors"
 )
 
+// An Option can be applied to a [Server].
 type Option interface {
 	apply(srv *Server) error
 }
@@ -23,6 +24,7 @@ type optionFunc func(srv *Server) error
 
 func (fn optionFunc) apply(srv *Server) error { return fn(srv) }
 
+// With creates a chain of [Option]s which can be applied to a [Server].
 func With(opts []Option) Option {
 	return optionFunc(func(srv *Server) error {
 		return srv.with(opts)
@@ -31,8 +33,8 @@ func With(opts []Option) Option {
 
 const panicNilLogger = "serv.WithLogger: Logger should not be nil"
 
-// WithLogger adds a [Logger] to the [Server]. It will also set the internal
-// [http.Server.ErrorLog] if [Logger] l also implements [ErrorLoggerProvider].
+// WithLogger adds a [Logger] to the [Server]. It is also set the internal
+// [http.Server.ErrorLog] if [Logger] log implements [ErrorLoggerProvider].
 func WithLogger(log Logger) Option {
 	return optionFunc(func(srv *Server) error {
 		if log == nil {
@@ -67,8 +69,7 @@ func WithErrorLogger(l *log.Logger) Option {
 }
 
 // WithName adds the [Server]'s name as value to the [http.Request]'s context
-// by wrapping the [Server.Handler] with [AddServerName]. This is done when the
-// [Server] starts.
+// by wrapping the [Server.Handler]. This is done when the [Server] starts.
 func WithName(name string) Option {
 	return optionFunc(func(srv *Server) error {
 		srv.name = name
@@ -89,8 +90,8 @@ const ErrHandlerIsNoRouteHandler errors.Msg = "server handler is not a RouteHand
 // WithRoutesRegisterer uses the provided [RoutesRegisterer](s) to add [Route]s
 // to the [Server]'s [Server.Handler]. It will use [DefaultServeMux] as handler
 // when [Server.Handler] is nil.
-// It returns an [ErrHandlerIsNoRouteHandler] error when
-// [Server.Handler] is not a [RouteHandler].
+// It returns an [ErrHandlerIsNoRouteHandler] error when [Server.Handler] is
+// not a [RouteHandler].
 func WithRoutesRegisterer(reg ...RoutesRegisterer) Option {
 	return optionFunc(func(srv *Server) error {
 		if srv.Handler == nil {
@@ -110,7 +111,8 @@ func WithRoutesRegisterer(reg ...RoutesRegisterer) Option {
 	})
 }
 
-// BaseContext returns a function which returns the provided context.
+// BaseContext returns a function compatible with [http.Server.BaseContext],
+// which returns the provided context.
 func BaseContext(ctx context.Context) func(_ net.Listener) context.Context {
 	return func(_ net.Listener) context.Context { return ctx }
 }

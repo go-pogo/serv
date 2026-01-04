@@ -46,11 +46,12 @@ type Route struct {
 	Handler http.Handler
 }
 
+// GetHandler returns the [Route]'s Handler and wraps it with [AddHandlerName]
+// when Name is set.
 func (r Route) GetHandler() http.Handler {
 	if r.Name == "" {
 		return r.Handler
 	}
-
 	return AddHandlerName(r.Name, r.Handler)
 }
 
@@ -91,6 +92,8 @@ var defaultServeMux = ServeMux{serveMux: http.DefaultServeMux}
 // DefaultServeMux returns a [ServeMux] containing [http.DefaultServeMux].
 func DefaultServeMux() *ServeMux { return &defaultServeMux }
 
+// HandlerRoute uses [http.ServeMux.Handler] to return a [Route] containing the
+// handler and pattern to use for the given [http.Request].
 func (mux *ServeMux) HandlerRoute(req *http.Request) Route {
 	h, pattern := mux.Handler(req)
 	if r, ok := h.(Route); ok {
