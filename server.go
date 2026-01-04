@@ -226,7 +226,8 @@ func (srv *Server) isClosed(err error) (ok bool) {
 	return ok
 }
 
-// ShouldUseTLS tries to determine if TLS is properly configured.
+// ShouldUseTLS tries to determine if TLS is properly configured and should be
+// used when starting the [Server].
 func ShouldUseTLS(conf *tls.Config) bool {
 	return conf != nil &&
 		(len(conf.Certificates) != 0 ||
