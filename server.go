@@ -119,15 +119,7 @@ func (srv *Server) start() error {
 		})
 	}
 	if srv.state == StateClosed {
-		srv.httpServer = http.Server{
-			DisableGeneralOptionsHandler: srv.DisableGeneralOptionsHandler,
-			TLSConfig:                    srv.TLSConfig,
-			TLSNextProto:                 srv.TLSNextProto,
-			ConnState:                    srv.ConnState,
-			ErrorLog:                     srv.ErrorLog,
-			BaseContext:                  srv.BaseContext,
-			ConnContext:                  srv.ConnContext,
-		}
+		srv.resetServer()
 	}
 
 	if srv.log == nil {
