@@ -5,6 +5,7 @@
 package httperr
 
 import (
+	"context"
 	"log"
 	"log/slog"
 	"net/http"
@@ -53,7 +54,7 @@ func TestHandleError(t *testing.T) {
 
 	t.Run("with err handler", func(t *testing.T) {
 		var have error
-		h := func(err error) { have = err }
+		h := func(_ context.Context, err error) { have = err }
 
 		srv := httptest.NewServer(HandleError(handler, h))
 		_, _ = srv.Client().Get(srv.URL)

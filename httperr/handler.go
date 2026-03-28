@@ -5,26 +5,46 @@
 package httperr
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
+	"github.com/go-pogo/serv"
 	"github.com/go-pogo/serv/response"
 )
 
 type ErrHandler interface {
-	HandleError(err error)
+	HandleError(ctx context.Context, err error)
 }
 
-type ErrHandlerFunc func(err error)
+type ErrHandlerFunc func(ctx context.Context, err error)
 
-func (fn ErrHandlerFunc) HandleError(err error) { fn(err) }
+// HandleError calls fn(ctx, err).
+func (fn ErrHandlerFunc) HandleError(ctx context.Context, err error) { fn(ctx, err) }
 
 func Log(l *slog.Logger) ErrHandlerFunc {
-	return func(err error) {
+	return func(ctx context.Context, err error) {
 		if l == nil {
 			l = slog.Default()
 		}
-		l.Error("handler error", slog.Any("err", err))
+		if !l.Handler().Enabled(ctx, slog.LevelError) {
+			return
+		}
+
+		attrs := make([]any, 0, 4)
+		attrs = append(attrs, slog.Any("err", err))
+
+		if v := serv.ServerName(ctx); v != "" {
+			attrs = append(attrs, slog.String("server", v))
+		}
+		if v := serv.HandlerName(ctx); v != "" {
+			attrs = append(attrs, slog.String("handler", v))
+		}
+		if v := serv.RequestID(ctx); v != "" {
+			attrs = append(attrs, slog.String("request_id", v))
+		}
+
+		l.ErrorContext(ctx, "handler error", attrs...)
 	}
 }
 
@@ -37,12 +57,12 @@ func HandleError(next Handler, handleErr ErrHandlerFunc) http.Handler {
 		panic(panicNilNextHandler)
 	}
 	if handleErr == nil {
-		handleErr = func(err error) { panic(err) }
+		handleErr = func(_ context.Context, err error) { panic(err) }
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := next.ServeHTTPError(w, r); err != nil {
-			handleErr.HandleError(err)
+			handleErr.HandleError(r.Context(), err)
 		}
 	})
 }
