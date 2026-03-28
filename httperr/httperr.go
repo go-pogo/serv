@@ -2,6 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+/*
+Package httperr provides interfaces and functions to create HTTP handlers which
+return errors, and the ability to stay backwards compatible with [http.Handler].
+*/
 package httperr
 
 import "net/http"

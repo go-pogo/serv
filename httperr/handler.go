@@ -22,6 +22,10 @@ type ErrHandlerFunc func(ctx context.Context, err error)
 // HandleError calls fn(ctx, err).
 func (fn ErrHandlerFunc) HandleError(ctx context.Context, err error) { fn(ctx, err) }
 
+// Log returns an [ErrHandlerFunc] which logs any errors using the provided
+// [slog.Logger] l or [slog.Default] when l is nil. Additional attributes that
+// are logged are the server's name, handler's name and id of the request, when
+// any of these are available from the [http.Request]'s context.
 func Log(l *slog.Logger) ErrHandlerFunc {
 	return func(ctx context.Context, err error) {
 		if l == nil {
@@ -67,6 +71,8 @@ func HandleError(next Handler, handleErr ErrHandlerFunc) http.Handler {
 	})
 }
 
+// WriteJSONError returns an [http.Handler] which writes any returned errors
+// from the [Handler] next as JSON using [response.WriteJSONError].
 func WriteJSONError(next Handler) http.Handler {
 	return http.HandlerFunc(func(wri http.ResponseWriter, req *http.Request) {
 		if err := next.ServeHTTPError(wri, req); err != nil {
