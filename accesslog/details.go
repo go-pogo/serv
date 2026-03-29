@@ -5,7 +5,6 @@
 package accesslog
 
 import (
-	"net"
 	"net/http"
 	"time"
 
@@ -39,30 +38,18 @@ type Details struct {
 // RemoteAddr returns a sanitized remote address from the [http.Request].
 // Add [middleware.RealIP] middleware to your [http.Handler] to handle (proxy)
 // forwarded traffic.
-func RemoteAddr(r *http.Request) string {
-	addr, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return addr
-}
+//
+// Deprecated: use serv.RemoteAddr instead.
+func RemoteAddr(r *http.Request) string { return serv.RemoteAddr(r) }
 
 // RequestURI
 // https://www.rfc-editor.org/rfc/rfc7540#section-8.3
-func RequestURI(r *http.Request) string {
-	var uri string
-	if r.ProtoMajor == 2 && r.Method == "CONNECT" {
-		uri = r.Host
-	} else {
-		uri = r.RequestURI
-	}
-	if uri == "" {
-		uri = r.URL.RequestURI()
-	}
-	return uri
-}
+//
+// Deprecated: use serv.RequestURI instead.
+func RequestURI(r *http.Request) string { return serv.RequestURI(r) }
 
 // Username returns a username when available in the request's url.
+//
 // Deprecated: will be removed in future releases.
 func Username(r *http.Request) string {
 	if r.URL != nil {

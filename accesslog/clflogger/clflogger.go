@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/go-pogo/serv"
 	"github.com/go-pogo/serv/accesslog"
 )
 
@@ -32,11 +33,11 @@ func (l *CommonLogger) LogAccess(_ context.Context, det accesslog.Details, req *
 	}
 
 	_, _ = fmt.Fprintf(l, "%s - %s [%s] \"%s %s %s\" %d %d\n",
-		accesslog.RemoteAddr(req),
+		serv.RemoteAddr(req),
 		username,
 		det.StartTime.Format(TimeLayout),
 		req.Method,
-		accesslog.RequestURI(req),
+		serv.RequestURI(req),
 		req.Proto,
 		det.StatusCode,
 		det.BytesWritten,

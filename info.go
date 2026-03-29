@@ -6,6 +6,7 @@ package serv
 
 import (
 	"context"
+	"net"
 	"net/http"
 )
 
@@ -104,4 +105,30 @@ func requestWithInfo(req *http.Request) (*http.Request, *Info) {
 	return req.WithContext(
 		context.WithValue(req.Context(), ctxInfoKey{}, &info),
 	), &info
+}
+
+// RemoteAddr returns a sanitized remote address from the [http.Request].
+// Add [middleware.RealIP] middleware to your [http.Handler] to handle (proxy)
+// forwarded traffic.
+func RemoteAddr(r *http.Request) string {
+	addr, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return addr
+}
+
+// RequestURI
+// https://www.rfc-editor.org/rfc/rfc7540#section-8.3
+func RequestURI(r *http.Request) string {
+	var uri string
+	if r.ProtoMajor == 2 && r.Method == "CONNECT" {
+		uri = r.Host
+	} else {
+		uri = r.RequestURI
+	}
+	if uri == "" {
+		uri = r.URL.RequestURI()
+	}
+	return uri
 }
