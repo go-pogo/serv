@@ -48,7 +48,7 @@ type Server struct {
 	Handler http.Handler
 
 	mut   sync.RWMutex
-	log   Logger
+	log   ServerLogger
 	name  string
 	state State
 }

@@ -5,8 +5,7 @@
 package serv
 
 import (
-	"io"
-	"log"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,20 +15,9 @@ func TestNewLogger(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		assert.PanicsWithValue(t, panicNewNilLogger, func() { _ = NewLogger(nil) })
 	})
-
-	t.Run("custom logger", func(t *testing.T) {
-		want := log.New(io.Discard, "", 0)
-		l := NewLogger(want)
-		assert.Same(t, want, l.(*logger).Logger)
-	})
-
-	t.Run("ErrorLoggerProvider", func(t *testing.T) {
-		want := log.Default()
-		assert.Same(t, want, NewLogger(want).ErrorLogger())
-	})
 }
 
 func TestDefaultLogger(t *testing.T) {
-	want := log.Default()
-	assert.Same(t, want, DefaultLogger().(*logger).Logger)
+	want := slog.Default()
+	assert.Same(t, want, DefaultLogger().Logger)
 }

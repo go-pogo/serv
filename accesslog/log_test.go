@@ -5,7 +5,7 @@
 package accesslog
 
 import (
-	"log"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,6 +18,6 @@ func TestNewLogger(t *testing.T) {
 }
 
 func TestDefaultLogger(t *testing.T) {
-	want := log.Default()
+	want := slog.Default()
 	assert.Same(t, want, DefaultLogger().(*logger).Logger)
 }

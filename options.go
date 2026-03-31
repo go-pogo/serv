@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/tls"
 	"log"
+	"log/slog"
 	"net"
 	"net/http"
 
@@ -33,9 +34,9 @@ func With(opts []Option) Option {
 
 const panicNilLogger = "serv.WithLogger: Logger should not be nil"
 
-// WithLogger adds a [Logger] to the [Server]. It is also set the internal
-// [http.Server.ErrorLog] if [Logger] log implements [ErrorLoggerProvider].
-func WithLogger(log Logger) Option {
+// WithLogger adds a [ServerLogger] to the [Server]. It is also set the internal
+// [http.Server.ErrorLog] if [ServerLogger] log implements [ErrorLoggerProvider].
+func WithLogger(log ServerLogger) Option {
 	return optionFunc(func(srv *Server) error {
 		if log == nil {
 			panic(panicNilLogger)
@@ -51,19 +52,21 @@ func WithLogger(log Logger) Option {
 	})
 }
 
-// WithDefaultLogger adds a default [Logger] to the [Server] using
-// [DefaultLogger] and [WithLogger].
+// WithDefaultLogger adds a default [ServerLogger] to the [Server] using
+// [WithLogger] with [DefaultLogger].
 func WithDefaultLogger() Option { return WithLogger(DefaultLogger()) }
 
-const panicNilErrorLogger = "serv.WithErrorLogger: log.Logger should not be nil"
+func slogErrorLogger(l *slog.Logger) *log.Logger {
+	return slog.NewLogLogger(l.Handler(), slog.LevelError)
+}
 
-func WithErrorLogger(l *log.Logger) Option {
+func WithErrorLogger(l *slog.Logger) Option {
 	return optionFunc(func(srv *Server) error {
 		if l == nil {
-			panic(panicNilErrorLogger)
+			srv.ErrorLog = nil
+		} else {
+			srv.ErrorLog = slogErrorLogger(l)
 		}
-
-		srv.ErrorLog = l
 		return nil
 	})
 }
